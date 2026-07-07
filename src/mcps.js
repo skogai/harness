@@ -105,8 +105,7 @@ function toClientServerShape(entry) {
 }
 
 /**
- * Build the `mcpServers` map used by both Claude Code (.mcp.json) and
- * Cursor (.cursor/mcp.json).
+ * Build the `mcpServers` map used by Claude Code (.mcp.json).
  */
 export function buildMcpServersMap(mcps) {
   const servers = {};

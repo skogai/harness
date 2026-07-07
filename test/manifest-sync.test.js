@@ -10,7 +10,7 @@ import { validateMcpEntry, collectEnvReferences, buildCodexMcpToml, getCatalogMc
 import { upsertManagedBlock, readManagedBlock } from '../src/utils/managed-block.js';
 import { runSync } from '../src/commands/sync.js';
 import { getStatus } from '../src/commands/status.js';
-import { detectStackProfile, getProfile } from '../src/profiles.js';
+import { getProfile } from '../src/profiles.js';
 
 async function withTempDir(t) {
   const dir = await mkdtemp(join(tmpdir(), 'harness-manifest-test-'));
@@ -35,7 +35,7 @@ test('manifest validation rejects bad shapes', () => {
     () => validateManifest({ version: 1, mcps: [GITHUB_MCP, GITHUB_MCP] }),
     /duplicate MCP/,
   );
-  validateManifest({ version: 1, profile: 'next-saas', targets: ['claude', 'codex'] });
+  validateManifest({ version: 1, profile: 'minimal', targets: ['claude', 'codex'] });
 });
 
 test('mcp entry validation accepts stdio and remote shapes', () => {
@@ -48,28 +48,20 @@ test('mcp entry validation accepts stdio and remote shapes', () => {
 test('resolveManifest merges profile skills/mcps with explicit entries', () => {
   const plan = resolveManifest({
     version: 1,
-    profile: 'next-saas',
-    targets: ['claude', 'codex', 'cursor'],
+    profile: 'minimal',
+    targets: ['claude', 'codex'],
     skills: ['toon-formatter'],
     mcps: [{ name: 'github', command: 'custom-binary' }],
   });
 
-  const profile = getProfile('next-saas');
+  const profile = getProfile('minimal');
   for (const skill of profile.skills) {
     assert.ok(plan.skills.includes(skill), `profile skill ${skill} present`);
   }
   assert.ok(plan.skills.includes('toon-formatter'));
 
   const github = plan.mcps.find((mcp) => mcp.name === 'github');
-  assert.equal(github.command, 'custom-binary', 'explicit MCP overrides profile entry by name');
-  assert.ok(plan.mcps.some((mcp) => mcp.name === 'neon'));
-});
-
-test('stack profile detection reads dependencies', () => {
-  assert.equal(detectStackProfile({ dependencies: { next: '16.0.0', 'better-auth': '1.0.0' } }), 'next-saas');
-  assert.equal(detectStackProfile({ dependencies: { next: '16.0.0' } }), 'next');
-  assert.equal(detectStackProfile({ dependencies: { express: '5.0.0' } }), 'node');
-  assert.equal(detectStackProfile(null), null);
+  assert.equal(github.command, 'custom-binary', 'explicit MCP entry present in resolved plan');
 });
 
 test('env reference collection finds ${VAR} across env, headers, args, url', () => {
@@ -111,8 +103,8 @@ test('sync writes skills and MCP config for all targets and is idempotent', asyn
   const dir = await withTempDir(t);
   await saveManifest(dir, {
     version: 1,
-    profile: 'base',
-    targets: ['claude', 'codex', 'cursor'],
+    profile: 'minimal',
+    targets: ['claude', 'codex'],
     mcps: [GITHUB_MCP],
   });
 
@@ -120,15 +112,12 @@ test('sync writes skills and MCP config for all targets and is idempotent', asyn
   assert.deepEqual(first.envVars, ['GITHUB_PERSONAL_ACCESS_TOKEN']);
 
   // skills land in every target's native layout
-  assert.ok(existsSync(join(dir, '.claude', 'skills', 'cleanup-unused')));
-  assert.ok(existsSync(join(dir, '.codex', 'skills', 'cleanup-unused', 'SKILL.md')));
-  assert.ok(existsSync(join(dir, '.cursor', 'rules', 'cleanup-unused.mdc')));
+  assert.ok(existsSync(join(dir, '.claude', 'skills', 'toon-formatter')));
+  assert.ok(existsSync(join(dir, '.codex', 'skills', 'toon-formatter', 'SKILL.md')));
 
   // MCP config lands in every target's native format
   const claudeMcp = JSON.parse(await readFile(join(dir, '.mcp.json'), 'utf-8'));
   assert.equal(claudeMcp.mcpServers.github.command, 'npx');
-  const cursorMcp = JSON.parse(await readFile(join(dir, '.cursor', 'mcp.json'), 'utf-8'));
-  assert.equal(cursorMcp.mcpServers.github.command, 'npx');
   const codexToml = await readFile(join(dir, '.codex', 'config.toml'), 'utf-8');
   assert.match(codexToml, /\[mcp_servers\.github\]/);
 
@@ -154,7 +143,7 @@ test('sync preserves foreign MCP keys and content outside managed markers', asyn
   await saveManifest(dir, {
     version: 1,
     targets: ['claude', 'codex'],
-    skills: ['cleanup-unused'],
+    skills: ['toon-formatter'],
     mcps: [GITHUB_MCP],
   });
 
@@ -174,7 +163,7 @@ test('status reports drift and unmanaged entries', async (t) => {
   await saveManifest(dir, {
     version: 1,
     targets: ['claude'],
-    skills: ['cleanup-unused'],
+    skills: ['toon-formatter'],
     mcps: [GITHUB_MCP],
   });
 
@@ -188,13 +177,13 @@ test('status reports drift and unmanaged entries', async (t) => {
   mcpJson.mcpServers.github.command = 'something-else';
   mcpJson.mcpServers.extra = { command: 'user-owned' };
   await writeFile(mcpPath, JSON.stringify(mcpJson));
-  await rm(join(dir, '.claude', 'skills', 'cleanup-unused'), { recursive: true });
+  await rm(join(dir, '.claude', 'skills', 'toon-formatter'), { recursive: true });
 
   report = await getStatus(dir);
   assert.equal(report.inSync, false);
   assert.deepEqual(report.targets.claude.mcps.drifted, ['github']);
   assert.deepEqual(report.targets.claude.mcps.unmanaged, ['extra']);
-  assert.deepEqual(report.targets.claude.missingSkills, ['cleanup-unused']);
+  assert.deepEqual(report.targets.claude.missingSkills, ['toon-formatter']);
 
   await runSync(dir);
   report = await getStatus(dir);
@@ -206,7 +195,7 @@ test('status reports drift and unmanaged entries', async (t) => {
 test('loadManifest returns null without skogai.json and round-trips with save', async (t) => {
   const dir = await withTempDir(t);
   assert.equal(await loadManifest(dir), null);
-  await saveManifest(dir, { version: 1, profile: 'next-saas', targets: ['claude'] });
+  await saveManifest(dir, { version: 1, profile: 'minimal', targets: ['claude'] });
   const manifest = await loadManifest(dir);
-  assert.equal(manifest.profile, 'next-saas');
+  assert.equal(manifest.profile, 'minimal');
 });

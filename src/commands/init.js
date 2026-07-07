@@ -13,23 +13,12 @@ import {
   copyHooks,
   copyToonUtils,
   writeCodexAgentsFile,
-  writeCursorProjectRule,
 } from '../utils/copy.js';
 import { setupToonBinary } from '../utils/toon.js';
-import { readFile } from 'fs/promises';
-import { profiles, getProfile, getProfileChoices, getSkillChoices, SKILLS, detectStackProfile } from '../profiles.js';
+import { profiles, getProfile, getProfileChoices, getSkillChoices, SKILLS } from '../profiles.js';
 import { AGENT_TARGETS, formatAgentTargets, parseAgentTargets } from '../agents.js';
 import { loadManifest, saveManifest, MANIFEST_VERSION } from '../manifest.js';
 import { runSync } from './sync.js';
-
-async function detectProjectProfile(targetDir) {
-  try {
-    const packageJson = JSON.parse(await readFile(join(targetDir, 'package.json'), 'utf-8'));
-    return detectStackProfile(packageJson);
-  } catch {
-    return null;
-  }
-}
 
 async function writeManifest(targetDir, agentTargets, options) {
   const manifest = (await loadManifest(targetDir)) || { version: MANIFEST_VERSION };
@@ -66,7 +55,6 @@ async function findExistingAgentTargets(targetDir, agentTargets) {
   const targetPaths = {
     claude: ['.claude'],
     codex: ['.codex', 'AGENTS.md'],
-    cursor: ['.cursor'],
   };
   const existing = [];
 
@@ -116,12 +104,6 @@ async function installCodex(targetDir, installPlan, options) {
   await writeCodexAgentsFile(targetDir, installPlan.skills, options);
 }
 
-async function installCursor(targetDir, installPlan, options) {
-  await copyAgentEssentials(targetDir, 'cursor', options);
-  await copyAgentSkills(targetDir, 'cursor', installPlan.skills, options);
-  await writeCursorProjectRule(targetDir, installPlan.skills, options);
-}
-
 export async function init(dir = '.', options = {}) {
   const targetDir = resolve(dir);
   const agentTargets = parseAgentTargets(options.agent || 'claude');
@@ -153,16 +135,12 @@ export async function init(dir = '.', options = {}) {
   }
 
   if (!options.profile && !options.skills && !options.yes) {
-    const detectedProfile = await detectProjectProfile(targetDir);
-    if (detectedProfile) {
-      console.log(chalk.dim(`Detected stack profile: ${detectedProfile} (${profiles[detectedProfile].description})\n`));
-    }
     const { selectedProfile } = await inquirer.prompt([{
       type: 'list',
       name: 'selectedProfile',
       message: 'Which skills do you want to install?',
       choices: getProfileChoices(),
-      default: detectedProfile || 'all',
+      default: 'all',
     }]);
 
     options.profile = selectedProfile;
@@ -233,8 +211,6 @@ export async function init(dir = '.', options = {}) {
         await installClaude(targetDir, installPlan, options);
       } else if (agent === 'codex') {
         await installCodex(targetDir, installPlan, options);
-      } else if (agent === 'cursor') {
-        await installCursor(targetDir, installPlan, options);
       }
     }
 
@@ -253,10 +229,6 @@ export async function init(dir = '.', options = {}) {
     if (agentTargets.includes('codex')) {
       console.log(chalk.dim('  Codex project guidance:'));
       console.log(`     ${chalk.cyan(join(targetDir, 'AGENTS.md'))}`);
-    }
-    if (agentTargets.includes('cursor')) {
-      console.log(chalk.dim('  Cursor project rules:'));
-      console.log(`     ${chalk.cyan(join(targetDir, '.cursor/rules'))}`);
     }
     console.log(chalk.dim('  Re-sync from skogai.json:'));
     console.log(`     ${chalk.cyan('npx skogharness@latest sync')}`);

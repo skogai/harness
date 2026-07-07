@@ -1,6 +1,6 @@
 # skogai/harness
 
-An opinionated multi-agent skill pack for Claude Code, Codex, and Cursor. Deep, handwritten skills for HCI usability modeling, Apple HIG Doctor guidance, copywriting, code cleanup, and TOON token savings.
+An opinionated multi-agent skill pack for Claude Code and Codex. Deep, handwritten skills for HCI usability modeling, Apple HIG Doctor guidance, copywriting, code cleanup, and TOON token savings.
 
 No orchestration framework. No aspirational YAML. Just agent-native project files generated from one shared skill source.
 
@@ -61,7 +61,6 @@ No orchestration framework. No aspirational YAML. Just agent-native project file
 |---|---|---|
 | Claude Code | `.claude/` | Native Claude skills, settings, TOON slash commands, optional hooks. |
 | Codex | `AGENTS.md` + `.codex/skills/*/SKILL.md` | Root Codex guidance points to project-local skill files. |
-| Cursor | `.cursor/rules/*.mdc` | Cursor project rules generated as Agent Requested rules, plus an always-applied skill-selection rule. |
 
 Claude remains the default for backwards compatibility. Use `--agent all` to install all supported targets.
 
@@ -76,10 +75,7 @@ npx skogharness@latest
 # Codex only
 npx skogharness@latest --agent codex
 
-# Cursor only
-npx skogharness@latest --agent cursor
-
-# Claude Code + Codex + Cursor
+# Claude Code + Codex
 npx skogharness@latest --agent all
 ```
 
@@ -106,9 +102,9 @@ npm i @toon-format/toon gpt-tokenizer
 
 ```bash
 npx skogharness@latest --profile all --agent all
-npx skogharness@latest --profile apple-hig --agent codex,cursor
+npx skogharness@latest --profile apple-hig --agent codex
 npx skogharness@latest --profile design-hci --agent codex
-npx skogharness@latest --skills copywriting-frameworks,cleanup-unused --agent cursor
+npx skogharness@latest --skills copywriting-frameworks,cleanup-unused --agent codex
 ```
 
 Profiles select a skill set. Agent targets decide where that skill set is installed.
@@ -123,7 +119,7 @@ Stack profiles (`next-saas`, `next`, `node`, `base`) additionally bundle MCP ser
 npx skogharness@latest sync
 ```
 
-or `harness sync` after installing the global CLI, and gets identical native config for whichever agent they use: skills plus `.mcp.json` (Claude Code), `.codex/config.toml` + `AGENTS.md` (Codex), and `.cursor/mcp.json` + rules (Cursor). Sync is idempotent — generated sections are fenced with `<harness:generated>` tags, manual edits outside them survive, and MCP entries harness didn't write are never touched.
+or `harness sync` after installing the global CLI, and gets identical native config for whichever agent they use: skills plus `.mcp.json` (Claude Code) and `.codex/config.toml` + `AGENTS.md` (Codex). Sync is idempotent — generated sections are fenced with `<harness:generated>` tags, manual edits outside them survive, and MCP entries harness didn't write are never touched.
 
 ```bash
 npx skogharness@latest status            # diff skogai.json vs native configs; exits 1 on drift
@@ -147,34 +143,18 @@ The `next-saas` profile is the flagship: cleanup + copywriting skills, the `fini
 .codex/
   skills/<skill>/SKILL.md
 AGENTS.md
-
-.cursor/
-  rules/harness.mdc
-  rules/<skill>.mdc
-  rules/<skill>/references/
 ```
 
-The package keeps one shared source of truth in `templates/.claude/skills/` and generates Codex/Cursor formats from that source during install.
+The package keeps one shared source of truth in `templates/.claude/skills/` and generates the Codex format from that source during install.
 
 The Apple HIG skills are vendored from [HIG Doctor](https://apple.raintree.technology), including the progressive-disclosure `references/` corpus with canonical Apple source links and attribution. The `hig-doctor-audit` skill points agents at HIG Doctor's published audit CLI and verification workflow.
-
-## Benchmarks
-
-Real measured token counts for representative workloads are in [`bench/`](bench/). Numbers use `gpt-tokenizer`, not a claimed heuristic.
-
-```bash
-bun run bench:generate # deterministically regenerate sample workloads
-bun run bench          # writes bench/RESULTS.md and bench/results.json
-```
-
-The Markdown file is for humans; `bench/results.json` is the machine-readable artifact for diffs, CI uploads, and downstream analysis. `bun run bench` also enforces a conservative 40% aggregate savings gate by default; override it with `BENCH_MIN_SAVINGS_PCT=...` or `--min-savings-pct ...` when intentionally changing the workload mix.
 
 ## Requirements
 
 - Node.js >= 18
-- Claude Code, Codex, or Cursor, depending on the selected target
+- Claude Code or Codex, depending on the selected target
 - Optional: `@toon-format/toon` and `gpt-tokenizer` for Claude TOON slash commands
 
 ## License
 
-MIT. Not affiliated with Anthropic, Apple, OpenAI, Cursor, or `@toon-format/toon`.
+MIT. Not affiliated with Anthropic, Apple, OpenAI, or `@toon-format/toon`.

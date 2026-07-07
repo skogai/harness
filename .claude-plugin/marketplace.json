@@ -1,7 +1,7 @@
 {
   "name": "skogai-harness",
   "version": "4.0.0",
-  "description": "skogai/harness: depth-focused agent skill pack for Claude Code, Codex, and Cursor.",
+  "description": "skogai/harness: depth-focused agent skill pack for Claude Code and Codex.",
   "owner": {
     "name": "skogai",
     "url": "https://github.com/skogai"

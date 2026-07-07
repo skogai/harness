@@ -9,11 +9,6 @@ export const AGENT_TARGETS = {
     name: 'Codex',
     outputDir: '.codex',
   },
-  cursor: {
-    id: 'cursor',
-    name: 'Cursor',
-    outputDir: '.cursor',
-  },
 };
 
 const AGENT_ALIASES = {

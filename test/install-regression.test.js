@@ -18,7 +18,6 @@ import {
   isSkillInstalled,
   normalizeSkillPath,
   writeCodexAgentsFile,
-  writeCursorProjectRule,
 } from '../src/utils/copy.js';
 import { setupToonBinary } from '../src/utils/toon.js';
 import { parseAgentTargets } from '../src/agents.js';
@@ -34,8 +33,8 @@ async function withTempDir(t) {
 }
 
 test('agent target parser supports aliases and rejects unknown targets', () => {
-  assert.deepEqual(parseAgentTargets('codex,cursor'), ['codex', 'cursor']);
-  assert.deepEqual(parseAgentTargets('all'), ['claude', 'codex', 'cursor']);
+  assert.deepEqual(parseAgentTargets('claude,codex'), ['claude', 'codex']);
+  assert.deepEqual(parseAgentTargets('all'), ['claude', 'codex']);
   assert.throws(() => parseAgentTargets('windsurf'), /Unknown agent target/);
 });
 
@@ -53,105 +52,22 @@ test('codex target installs local skills and root AGENTS guidance', async (t) =>
   const dir = await withTempDir(t);
 
   await copyAgentEssentials(dir, 'codex');
-  await copyAgentSkills(dir, 'codex', ['copywriting-frameworks']);
-  await writeCodexAgentsFile(dir, ['copywriting-frameworks']);
+  await copyAgentSkills(dir, 'codex', ['toon-formatter']);
+  await writeCodexAgentsFile(dir, ['toon-formatter']);
 
   assert.equal(
-    existsSync(join(dir, '.codex', 'skills', 'copywriting-frameworks', 'SKILL.md')),
-    true,
-  );
-  assert.equal(
-    existsSync(join(
-      dir,
-      '.codex',
-      'skills',
-      'copywriting-frameworks',
-      'references',
-      'direct-response-patterns.md',
-    )),
+    existsSync(join(dir, '.codex', 'skills', 'toon-formatter', 'SKILL.md')),
     true,
   );
   assert.equal(existsSync(join(dir, 'AGENTS.md')), true);
-  assert.equal(await isAgentSkillInstalled(dir, 'codex', 'copywriting-frameworks'), true);
-});
+  assert.equal(await isAgentSkillInstalled(dir, 'codex', 'toon-formatter'), true);
 
-test('cursor target installs project rules and skill references', async (t) => {
-  const dir = await withTempDir(t);
-
-  await copyAgentEssentials(dir, 'cursor');
-  await copyAgentSkills(dir, 'cursor', ['copywriting-frameworks']);
-  await writeCursorProjectRule(dir, ['copywriting-frameworks']);
-
-  assert.equal(existsSync(join(dir, '.cursor', 'rules', 'harness.mdc')), true);
-  assert.equal(existsSync(join(dir, '.cursor', 'rules', 'copywriting-frameworks.mdc')), true);
-  assert.equal(
-    existsSync(join(
-      dir,
-      '.cursor',
-      'rules',
-      'copywriting-frameworks',
-      'references',
-      'direct-response-patterns.md',
-    )),
-    true,
-  );
-  assert.equal(await isAgentSkillInstalled(dir, 'cursor', 'copywriting-frameworks'), true);
-});
-
-test('real Apple HIG skills install with references for Codex and Cursor', async (t) => {
-  const dir = await withTempDir(t);
-  const skillPaths = [
-    'hig-foundations',
-    'hig-components-layout',
-  ];
-
-  await copyAgentEssentials(dir, 'codex');
-  await copyAgentSkills(dir, 'codex', skillPaths);
-  await writeCodexAgentsFile(dir, skillPaths);
-
-  await copyAgentEssentials(dir, 'cursor');
-  await copyAgentSkills(dir, 'cursor', skillPaths);
-  await writeCursorProjectRule(dir, skillPaths);
-
-  const codexSkillPath = join(dir, '.codex', 'skills', 'hig-foundations', 'SKILL.md');
-  const cursorRulePath = join(dir, '.cursor', 'rules', 'hig-components-layout.mdc');
-
+  const codexSkillPath = join(dir, '.codex', 'skills', 'toon-formatter', 'SKILL.md');
   assert.equal((await lstat(codexSkillPath)).isSymbolicLink(), false);
-  assert.equal((await lstat(cursorRulePath)).isSymbolicLink(), false);
-  assert.equal(
-    existsSync(join(dir, '.codex', 'skills', 'hig-foundations', 'references', 'color.md')),
-    true,
-  );
-  assert.equal(
-    existsSync(join(dir, '.cursor', 'rules', 'hig-components-layout', 'references', 'sidebars.md')),
-    true,
-  );
 
   const codexAgents = await readFile(join(dir, 'AGENTS.md'), 'utf8');
-  assert.match(codexAgents, /Apple Human Interface Guidelines design foundations/);
+  assert.match(codexAgents, /toon-formatter/);
   assert.doesNotMatch(codexAgents, />-/);
-});
-
-test('copywriting skill installs with its reference material', async (t) => {
-  const dir = await withTempDir(t);
-
-  await copySkills(dir, ['copywriting-frameworks']);
-
-  assert.equal(
-    existsSync(join(dir, '.claude', 'skills', 'copywriting-frameworks', 'skill.md')),
-    true,
-  );
-  assert.equal(
-    existsSync(join(
-      dir,
-      '.claude',
-      'skills',
-      'copywriting-frameworks',
-      'references',
-      'direct-response-patterns.md',
-    )),
-    true,
-  );
 });
 
 test('legacy skills/<id> inputs normalize to the current destination', async (t) => {
@@ -259,46 +175,15 @@ test('CLI can install all supported agent targets', async (t) => {
     '--agent',
     'all',
     '--skills',
-    'copywriting-frameworks',
+    'toon-formatter',
   ]);
 
-  assert.equal(existsSync(join(dir, '.claude', 'skills', 'copywriting-frameworks', 'skill.md')), true);
-  assert.equal(existsSync(join(dir, '.codex', 'skills', 'copywriting-frameworks', 'SKILL.md')), true);
+  assert.equal(existsSync(join(dir, '.claude', 'skills', 'toon-formatter', 'skill.md')), true);
+  assert.equal(existsSync(join(dir, '.codex', 'skills', 'toon-formatter', 'SKILL.md')), true);
   assert.equal(existsSync(join(dir, 'AGENTS.md')), true);
-  assert.equal(existsSync(join(dir, '.cursor', 'rules', 'copywriting-frameworks.mdc')), true);
 });
 
-test('CLI apple-hig profile installs only HIG skills for Codex and Cursor', async (t) => {
-  const dir = await withTempDir(t);
-  const cliPath = resolve('bin/cli.js');
-
-  const { stdout, stderr } = await execFileAsync(process.execPath, [
-    cliPath,
-    'init',
-    dir,
-    '--yes',
-    '--agent',
-    'codex,cursor',
-    '--profile',
-    'apple-hig',
-  ]);
-
-  assert.match(`${stdout}\n${stderr}`, /Installed 15 skills for Codex, Cursor/);
-  assert.equal(existsSync(join(dir, '.codex', 'skills', 'hig-doctor-audit', 'SKILL.md')), true);
-  assert.equal(existsSync(join(dir, '.codex', 'skills', 'hig-foundations', 'SKILL.md')), true);
-  assert.equal(
-    existsSync(join(dir, '.codex', 'skills', 'hig-technologies', 'references', 'siri.md')),
-    true,
-  );
-  assert.equal(existsSync(join(dir, '.cursor', 'rules', 'hig-components-controls.mdc')), true);
-  assert.equal(
-    existsSync(join(dir, '.cursor', 'rules', 'hig-components-layout', 'references', 'sidebars.md')),
-    true,
-  );
-  assert.equal(existsSync(join(dir, '.codex', 'skills', 'human-processor-model')), false);
-});
-
-test('CLI codex-only install does not emit Claude or Cursor targets', async (t) => {
+test('CLI codex-only install does not emit a Claude target', async (t) => {
   const dir = await withTempDir(t);
   const cliPath = resolve('bin/cli.js');
 
@@ -310,13 +195,12 @@ test('CLI codex-only install does not emit Claude or Cursor targets', async (t) 
     '--agent',
     'codex',
     '--skills',
-    'cleanup-unused',
+    'toon-formatter',
   ]);
 
-  assert.equal(existsSync(join(dir, '.codex', 'skills', 'cleanup-unused', 'SKILL.md')), true);
+  assert.equal(existsSync(join(dir, '.codex', 'skills', 'toon-formatter', 'SKILL.md')), true);
   assert.equal(existsSync(join(dir, 'AGENTS.md')), true);
   assert.equal(existsSync(join(dir, '.claude')), false);
-  assert.equal(existsSync(join(dir, '.cursor')), false);
 });
 
 test('CLI deduplicates repeated explicit skill ids before installing', async (t) => {
@@ -331,9 +215,9 @@ test('CLI deduplicates repeated explicit skill ids before installing', async (t)
     '--agent',
     'codex',
     '--skills',
-    'hig-foundations,hig-foundations',
+    'toon-formatter,toon-formatter',
   ]);
 
   assert.match(`${stdout}\n${stderr}`, /Installed 1 skills for Codex/);
-  assert.equal(existsSync(join(dir, '.codex', 'skills', 'hig-foundations', 'SKILL.md')), true);
+  assert.equal(existsSync(join(dir, '.codex', 'skills', 'toon-formatter', 'SKILL.md')), true);
 });

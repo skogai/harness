@@ -16,15 +16,15 @@ const pkg = JSON.parse(readFileSync(join(__dirname, '../package.json'), 'utf-8')
 program
   .name('harness')
   .version(pkg.version)
-  .description('skogai/harness: 28 depth-focused skills for Claude Code, Codex, and Cursor');
+  .description('skogai/harness: TOON token-optimization skill pack for Claude Code and Codex');
 
 program
   .command('init [dir]', { isDefault: true })
   .description('Initialize harness in directory')
   .option('-y, --yes', 'Skip confirmation prompts')
   .option('-f, --force', 'Overwrite existing files')
-  .option('--agent <list>', 'Agent target(s): claude, codex, cursor, or all', 'claude')
-  .option('--profile <name>', 'Use preset profile (all, apple-hig, design-hci, minimal, next-saas, next, node, base)')
+  .option('--agent <list>', 'Agent target(s): claude, codex, or all', 'claude')
+  .option('--profile <name>', 'Use preset profile (all, minimal, custom)')
   .option('--skills <list>', 'Comma-separated skills to install')
   .option('--no-toon', 'Skip TOON utilities')
   .action(init);

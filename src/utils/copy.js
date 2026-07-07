@@ -131,10 +131,6 @@ function getAgentOutputDir(targetDir, agent) {
   return resolve(targetDir, target.outputDir);
 }
 
-function cursorRuleName(skillPath) {
-  return normalizeSkillPath(skillPath).replaceAll("/", "--");
-}
-
 function splitFrontmatter(markdown) {
   if (!markdown.startsWith("---\n")) {
     return { metadata: {}, body: markdown };
@@ -185,11 +181,6 @@ function normalizeDescriptionForAgent(description) {
     .replaceAll("Use when Claude needs", "Use when the agent needs")
     .replaceAll("When Claude needs", "When the agent needs")
     .replaceAll("Claude needs", "the agent needs");
-}
-
-function normalizeCursorBody(skillPath, body) {
-  const ruleName = cursorRuleName(skillPath);
-  return body.replaceAll("`references/", `\`${ruleName}/references/`);
 }
 
 async function getSkillMarkdownSource(skillPath) {
@@ -262,34 +253,6 @@ async function copyCodexSkill(targetDir, skillPath, options = {}) {
 
   await writeGeneratedFile(destPath, content, options);
   await copySkillSupportFiles(source.skillDir, destDir, options);
-
-  return destPath;
-}
-
-async function copyCursorSkill(targetDir, skillPath, options = {}) {
-  const source = await getSkillMarkdownSource(skillPath);
-  const rulesRoot = resolve(targetDir, ".cursor", "rules");
-  const ruleName = cursorRuleName(source.normalizedSkillPath);
-  const destPath = resolve(rulesRoot, `${ruleName}.mdc`);
-  const supportDir = resolve(rulesRoot, ruleName);
-
-  if (!isPathSafe(destPath, rulesRoot) || !isPathSafe(supportDir, rulesRoot)) {
-    throw new Error("Security: destination path escapes .cursor rules directory");
-  }
-
-  const description = normalizeDescriptionForAgent(source.metadata.description);
-  const content = [
-    "---",
-    `description: ${JSON.stringify(description)}`,
-    "globs:",
-    "alwaysApply: false",
-    "---",
-    "",
-    normalizeCursorBody(source.normalizedSkillPath, source.body.trimStart()),
-  ].join("\n");
-
-  await writeGeneratedFile(destPath, content, options);
-  await copySkillSupportFiles(source.skillDir, supportDir, options);
 
   return destPath;
 }
@@ -430,9 +393,6 @@ export async function isAgentSkillInstalled(targetDir, agent, skillPath) {
   if (agent === "codex") {
     return pathExists(join(targetDir, ".codex", "skills", normalizedSkillPath, "SKILL.md"));
   }
-  if (agent === "cursor") {
-    return pathExists(join(targetDir, ".cursor", "rules", `${cursorRuleName(normalizedSkillPath)}.mdc`));
-  }
   throw new Error(`Unknown agent target: ${sanitizeForLog(String(agent))}`);
 }
 
@@ -457,10 +417,6 @@ export async function copyAgentEssentials(targetDir, agent, options = {}) {
     });
   }
 
-  if (agent === "cursor") {
-    await ensureDir(join(outputDir, "rules"));
-  }
-
   return outputDir;
 }
 
@@ -470,9 +426,6 @@ export async function copyAgentSkill(targetDir, agent, skillPath, options = {}) 
   }
   if (agent === "codex") {
     return copyCodexSkill(targetDir, skillPath, options);
-  }
-  if (agent === "cursor") {
-    return copyCursorSkill(targetDir, skillPath, options);
   }
   throw new Error(`Unknown agent target: ${sanitizeForLog(String(agent))}`);
 }
@@ -518,36 +471,6 @@ export async function writeCodexAgentsFile(targetDir, skillPaths, options = {}) 
     "## Local Skill Files",
     "",
     "Codex skill files are stored under `.codex/skills/<skill-id>/SKILL.md` so project-specific expertise can live with the repository.",
-    "",
-  ].join("\n");
-
-  await writeGeneratedFile(destPath, content, options);
-  return destPath;
-}
-
-export async function writeCursorProjectRule(targetDir, skillPaths, options = {}) {
-  const summaries = await getSkillSummaries(skillPaths);
-  const rulesRoot = resolve(targetDir, ".cursor", "rules");
-  const destPath = resolve(rulesRoot, "harness.mdc");
-
-  const skillList = summaries.map((skill) => (
-    `- \`${skill.id}\`: ${skill.description}`
-  )).join("\n");
-
-  const content = [
-    "---",
-    'description: "Harness skill-selection guidance for Cursor"',
-    "globs:",
-    "alwaysApply: true",
-    "---",
-    "",
-    "# Harness",
-    "",
-    "Use the project rules in this directory when a request matches their descriptions. Each skill rule is Agent Requested by default so Cursor can select it when the task context calls for it.",
-    "",
-    "## Installed Skills",
-    "",
-    skillList || "- No skills were installed.",
     "",
   ].join("\n");
 

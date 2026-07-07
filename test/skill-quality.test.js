@@ -9,7 +9,6 @@ import {
   copyAgentEssentials,
   copyAgentSkills,
   writeCodexAgentsFile,
-  writeCursorProjectRule,
 } from '../src/utils/copy.js';
 import { SKILLS } from '../src/profiles.js';
 
@@ -103,21 +102,20 @@ test('template skill entrypoints stay compact and use folder-matching names', as
   }
 });
 
-test('registry covers every top-level template skill', async () => {
-  const registered = new Set(SKILLS.map((skill) => skill.id));
+test('every registered skill has a top-level template', async () => {
   const entries = await readdir(SKILLS_ROOT, { withFileTypes: true });
-  const topLevelSkills = [];
+  const topLevelSkills = new Set();
 
   for (const entry of entries) {
     if (!entry.isDirectory()) continue;
     const skillDir = join(SKILLS_ROOT, entry.name);
     if (existsSync(join(skillDir, 'skill.md')) || existsSync(join(skillDir, 'SKILL.md'))) {
-      topLevelSkills.push(entry.name);
+      topLevelSkills.add(entry.name);
     }
   }
 
-  for (const skillId of topLevelSkills.sort()) {
-    assert.ok(registered.has(skillId), `${skillId} is a top-level template skill but is not registered`);
+  for (const skill of SKILLS) {
+    assert.ok(topLevelSkills.has(skill.id), `${skill.id} is registered but has no top-level template`);
   }
 });
 
@@ -186,17 +184,13 @@ test('template skills use references instead of docs directories for bundled gui
   }
 });
 
-test('generated Codex and Cursor targets keep valid target-specific skill output', async (t) => {
+test('generated Codex target keeps valid target-specific skill output', async (t) => {
   const dir = await withTempDir(t);
   const skillPaths = SKILLS.map((skill) => skill.id);
 
   await copyAgentEssentials(dir, 'codex');
   await copyAgentSkills(dir, 'codex', skillPaths);
   await writeCodexAgentsFile(dir, skillPaths);
-
-  await copyAgentEssentials(dir, 'cursor');
-  await copyAgentSkills(dir, 'cursor', skillPaths);
-  await writeCursorProjectRule(dir, skillPaths);
 
   const generatedFiles = (await walk(dir)).filter((file) => /\.(md|mdc)$/.test(file));
   for (const file of generatedFiles) {
@@ -206,24 +200,15 @@ test('generated Codex and Cursor targets keep valid target-specific skill output
   }
 
   const codexAgents = await readFile(join(dir, 'AGENTS.md'), 'utf8');
-  const cursorProjectRule = await readFile(join(dir, '.cursor/rules/harness.mdc'), 'utf8');
   assert.doesNotMatch(codexAgents, /\\"/);
-  assert.doesNotMatch(cursorProjectRule, /\\"/);
 
-  const codexCopywriting = await readFile(join(dir, '.codex/skills/copywriting-frameworks/SKILL.md'), 'utf8');
-  const codexMetadata = splitFrontmatter(codexCopywriting).metadata;
+  const codexToonFormatter = await readFile(join(dir, '.codex/skills/toon-formatter/SKILL.md'), 'utf8');
+  const codexMetadata = splitFrontmatter(codexToonFormatter).metadata;
   assert.deepEqual(Object.keys(codexMetadata), ['name', 'description']);
   assert.equal(
     existsSync(join(
       dir,
-      '.codex/skills/copywriting-frameworks/references/direct-response-patterns.md',
-    )),
-    true,
-  );
-  assert.equal(
-    existsSync(join(
-      dir,
-      '.cursor/rules/copywriting-frameworks/references/direct-response-patterns.md',
+      '.codex/skills/toon-formatter/references/toon-guide.md',
     )),
     true,
   );

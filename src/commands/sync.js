@@ -8,7 +8,6 @@ import {
   copyCommands,
   copyToonUtils,
   getSkillSummaries,
-  writeCursorProjectRule,
 } from '../utils/copy.js';
 import { setupToonBinary } from '../utils/toon.js';
 import { upsertManagedBlock } from '../utils/managed-block.js';
@@ -108,20 +107,9 @@ async function syncCodex(targetDir, plan, options) {
   }
 }
 
-async function syncCursor(targetDir, plan, options) {
-  await copyAgentEssentials(targetDir, 'cursor', { ...options, force: true });
-  await copyAgentSkills(targetDir, 'cursor', plan.skills, { ...options, force: true });
-
-  // harness.mdc is wholly generated, and .mdc frontmatter must start
-  // at byte 0, so it is overwritten rather than marker-managed.
-  await writeCursorProjectRule(targetDir, plan.skills, { ...options, force: true });
-  return writeMcpServersJson(join(targetDir, '.cursor', 'mcp.json'), plan.mcps);
-}
-
 const TARGET_SYNCERS = {
   claude: syncClaude,
   codex: syncCodex,
-  cursor: syncCursor,
 };
 
 async function updateEnvExample(targetDir, envVars) {

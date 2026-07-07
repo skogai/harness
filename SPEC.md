@@ -7,7 +7,7 @@
 
 ## Problem
 
-Every AI agent tool — Claude Code, Codex, Cursor — has its own config format, its own skills/rules directory, its own MCP setup. Teams that want consistent agent behavior either maintain parallel configs manually or document it in a README and hope contributors follow it.
+Every AI agent tool — Claude Code, Codex — has its own config format, its own skills/rules directory, its own MCP setup. Teams that want consistent agent behavior either maintain parallel configs manually or document it in a README and hope contributors follow it.
 
 There is no `package.json` equivalent for agent environments.
 
@@ -29,7 +29,7 @@ Check it into git. Every contributor runs `npx skogharness@latest sync` and thei
 {
   "version": 1,
   "profile": "next-saas",
-  "targets": ["claude", "codex", "cursor"],
+  "targets": ["claude", "codex"],
   "skills": [
     "cleanup-unused",
     "cleanup-types",
@@ -132,7 +132,7 @@ npm create next-saas-starter my-app
   → prompts (tenancy, integrations, agent targets)
   → scaffold app + starter.config.ts
   → write skogai.json (profile: next-saas)
-  → npx skogharness@latest sync        ← .claude/ + AGENTS.md + .cursor/ all configured
+  → npx skogharness@latest sync        ← .claude/ + AGENTS.md all configured
   → vercel link (optional)
 ```
 
@@ -162,8 +162,7 @@ No other starter does this. Everyone else stops at "here's your `.env.example`, 
 Reads `skogai.json` and writes native config for all listed targets. Safe to re-run — generated sections are fenced with `<harness:generated>` tags so manual edits outside them survive.
 
 **Claude Code** → `.claude/settings.json` (mcpServers, model, hooks) + `.claude/skills/`  
-**Codex** → `.codex/config.toml` (mcp, model) + `AGENTS.md` skill instructions  
-**Cursor** → `.cursor/mcp.json` + `.cursor/rules/*.mdc`
+**Codex** → `.codex/config.toml` (mcp, model) + `AGENTS.md` skill instructions
 
 For rules/skills sync, harness writes directly. It does not delegate to ruler or rulesync — adding a dependency for something this simple would be worse than owning the small set of target formats.
 
@@ -193,7 +192,7 @@ Optional global CLI for repeated use: `npm i -g skogharness`, then `harness sync
 
 ## MCP Config Translation
 
-Same entry in `skogai.json`, three output formats:
+Same entry in `skogai.json`, two output formats:
 
 **Claude Code** (`.claude/settings.json`):
 ```json
@@ -217,19 +216,6 @@ args = ["-y", "@neondatabase/mcp-server-neon"]
 
 [mcp_servers.env]
 NEON_API_KEY = "${NEON_API_KEY}"
-```
-
-**Cursor** (`.cursor/mcp.json`):
-```json
-{
-  "mcpServers": {
-    "neon": {
-      "command": "npx",
-      "args": ["-y", "@neondatabase/mcp-server-neon"],
-      "env": { "NEON_API_KEY": "${NEON_API_KEY}" }
-    }
-  }
-}
 ```
 
 ---

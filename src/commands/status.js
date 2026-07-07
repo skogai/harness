@@ -10,7 +10,6 @@ import { AGENT_TARGETS } from '../agents.js';
 
 const MCP_JSON_PATHS = {
   claude: ['.mcp.json'],
-  cursor: ['.cursor', 'mcp.json'],
 };
 
 async function readJsonIfExists(filePath) {
