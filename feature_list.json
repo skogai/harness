@@ -28,6 +28,27 @@
       ],
       "status": "done",
       "evidence": "Ran node templates/.claude/skills/harness-creator/scripts/validate-harness.mjs --target . and git diff --check -- README.md AGENTS.md docs/README.md docs/implementation.md feature_list.json progress.md init.sh session-handoff.md."
+    },
+    {
+      "id": "feat-004",
+      "name": "skogharness harness-init command",
+      "description": "Add a first-class `skogharness harness-init [dir]` CLI command that scaffolds feature_list.json, progress.md, session-handoff.md, and a project-specific init.sh from the harness-creator templates, since this repo's own product is a harness installer.",
+      "dependencies": [],
+      "status": "done",
+      "evidence": "src/commands/harness-init.js added; wired into bin/cli.js and src/index.js. bun run lint clean, bun test 46/46 pass. Squash-merged to master as 8a68ae8 feat: add harness startup scaffold, alongside feat-001..003."
+    },
+    {
+      "id": "feat-005",
+      "name": "Full-repo verification after merge",
+      "description": "Run the complete verification suite (not just docs-scoped checks) once the code and docs/lifecycle changes from feat-001..004 were combined on master.",
+      "dependencies": [
+        "feat-001",
+        "feat-002",
+        "feat-003",
+        "feat-004"
+      ],
+      "status": "done",
+      "evidence": "./init.sh run from master (clean working tree): bun install (no changes), bun run lint clean, bun test 46/46 pass, harness-creator validate-harness.mjs 100/100 across all five subsystems."
     }
   ]
 }

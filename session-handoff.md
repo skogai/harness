@@ -2,9 +2,9 @@
 
 ## Current Objective
 
-- Goal: Add implementation documentation and minimal harness lifecycle files.
-- Current status: Documentation files and lifecycle files are added; focused validation passed.
-- Branch / commit: `starting-harness-setup` at `b5086fe` with pre-existing code changes.
+- Goal: Add implementation documentation, minimal harness lifecycle files, and a first-class `skogharness harness-init` command.
+- Current status: All of the above are merged. Full verification passed from `master`.
+- Branch / commit: `master` at `8a68ae8 feat: add harness startup scaffold` (squash-merged from `starting-harness-setup`).
 
 ## Completed This Session
 
@@ -14,6 +14,9 @@
 - [x] Ran `harness-creator` validation once and identified missing state/lifecycle artifacts.
 - [x] Added `feature_list.json`, `progress.md`, `init.sh`, and `session-handoff.md`.
 - [x] Updated `AGENTS.md` with startup, scope, done, and end-of-session rules.
+- [x] Added `src/commands/harness-init.js`, a new `skogharness harness-init [dir]` command that scaffolds these same state/lifecycle files for other target repos; wired into `bin/cli.js` and `src/index.js`.
+- [x] Squash-merged the branch to `master`; worktree cleaned up.
+- [x] Ran full verification (`./init.sh`) from `master`: install, lint, tests, harness audit.
 
 ## Verification Evidence
 
@@ -23,7 +26,10 @@
 | Harness audit | `node templates/.claude/skills/harness-creator/scripts/validate-harness.mjs --target .` | Fail, 28/100 | Expected before adding lifecycle files. |
 | Harness audit | `node templates/.claude/skills/harness-creator/scripts/validate-harness.mjs --target .` | Pass, 76/100 | Remaining misses were instruction wording before final AGENTS.md tightening. |
 | Whitespace | `git diff --check -- README.md AGENTS.md docs/README.md docs/implementation.md feature_list.json progress.md init.sh session-handoff.md` | Pass | Final focused whitespace check. |
-| Harness audit | `node templates/.claude/skills/harness-creator/scripts/validate-harness.mjs --target .` | Pass, 100/100 | Final harness structure check. |
+| Harness audit | `node templates/.claude/skills/harness-creator/scripts/validate-harness.mjs --target .` | Pass, 100/100 | Final harness structure check, pre-merge. |
+| Lint | `bun run lint` | Pass | Run from `master` post-merge, includes `src/commands/harness-init.js`. |
+| Tests | `bun test` | Pass, 46/46 | Run from `master` post-merge. |
+| Full init | `./init.sh` | Pass | install + lint + test + harness audit (100/100), run from `master`. |
 
 ## Files Changed
 
@@ -35,16 +41,19 @@
 - `progress.md`
 - `init.sh`
 - `session-handoff.md`
+- `src/commands/harness-init.js`
+- `bin/cli.js`
+- `src/index.js`
 
 ## Decisions Made
 
 - Keep implementation rationale in `docs/` rather than expanding the top-level README.
 - Add minimal harness lifecycle artifacts directly because the existing `AGENTS.md` should be preserved.
+- Scaffold state/lifecycle files as a first-class `skogharness harness-init` command in `src/`, not a one-off external script, since this repo's product is itself a harness installer.
 
 ## Blockers / Risks
 
-- Pre-existing modifications exist in `bin/cli.js`, `src/index.js`, and `src/commands/harness-init.js`.
-- The user-provided cwd path became an empty Git repo during the session; the populated checkout is `/home/skogix/dev/harness/starting-harness-setup`.
+- None currently open. Formerly-open items (pre-existing code changes needing review, checkout confusion between two worktree paths) are resolved: code changes are reviewed, verified, and merged; the worktree confusion is moot since that worktree no longer exists.
 
 ## Next Session Startup
 
@@ -52,7 +61,9 @@
 2. Read `feature_list.json` and `progress.md`.
 3. Review this handoff.
 4. Run `./init.sh` for full verification, or run focused checks if the session is docs-only.
+5. Confirm whether `master` needs pushing to `origin` before starting new work.
 
 ## Recommended Next Step
 
-- Review the pre-existing code changes and run full `bun run lint` / `bun test` before shipping the branch if those code changes remain in scope.
+- Check `git status`/`git log origin/master..master` and push if `master` is ahead of `origin`.
+- Pick the next feature to work on; none is currently active.

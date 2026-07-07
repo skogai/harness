@@ -2,8 +2,8 @@
 
 ## Current State
 
-**Last Updated:** 2026-07-07 20:40
-**Active Feature:** none - docs and harness lifecycle pass complete
+**Last Updated:** 2026-07-07 21:15
+**Active Feature:** none - docs, harness lifecycle, and harness-init command all merged to master
 
 ## Status
 
@@ -14,7 +14,9 @@
 - [x] Linked `docs/` from the top-level `README.md`.
 - [x] Added `feature_list.json`, `progress.md`, `init.sh`, and `session-handoff.md`.
 - [x] Updated `AGENTS.md` with startup workflow, scope control, definition of done, and end-of-session rules.
-- [x] Ran harness validation successfully at 100/100.
+- [x] Added `src/commands/harness-init.js` (new `skogharness harness-init [dir]` command) and wired it into `bin/cli.js` and `src/index.js`.
+- [x] Squash-merged everything above to `master` as `8a68ae8 feat: add harness startup scaffold`.
+- [x] Ran full verification from master via `./init.sh`: `bun install`, `bun run lint`, `bun test` (46/46 pass), and harness-creator's own `validate-harness.mjs` at 100/100.
 
 ### What's In Progress
 
@@ -22,13 +24,17 @@
 
 ### What's Next
 
-1. Review the pre-existing code changes in `bin/cli.js`, `src/index.js`, and `src/commands/harness-init.js`.
-2. Run full `bun run lint` and `bun test` before shipping if the branch includes those code changes.
+1. Confirm `master` is pushed to `origin` if not already (check `git status` ahead/behind `origin/master`).
+2. Pick the next feature from a fresh `feature_list.json` entry when new work starts.
 
 ## Blockers / Risks
 
-- [ ] Pre-existing code changes: `bin/cli.js`, `src/index.js`, and `src/commands/harness-init.js` were modified before this docs/harness pass.
-- [ ] Checkout confusion: `/home/skogix/dev/harness/harness-starting-features-documentation` was an empty Git repo during this session; the populated checkout is `/home/skogix/dev/harness/starting-harness-setup`.
+- [ ] None currently open. The prior "pre-existing code changes" and "checkout confusion" blockers below are resolved as of the merge to master.
+
+### Resolved
+
+- [x] Pre-existing code changes (`bin/cli.js`, `src/index.js`, `src/commands/harness-init.js`) were reviewed and verified: lint clean, 46/46 tests pass, now part of the merged `master` history.
+- [x] Checkout confusion (`/home/skogix/dev/harness/harness-starting-features-documentation` vs `/home/skogix/dev/harness/starting-harness-setup`) is moot — the worktree was squash-merged and removed; work now lives on `master` in the main checkout.
 
 ## Decisions Made
 
@@ -47,13 +53,15 @@
 - `progress.md` - added restartable progress log.
 - `init.sh` - added repo verification entrypoint.
 - `session-handoff.md` - added session handoff template.
+- `src/commands/harness-init.js` - new `skogharness harness-init` command.
+- `bin/cli.js`, `src/index.js` - registered/exported the new command.
 
 ## Evidence of Completion
 
 - [x] Whitespace check: `git diff --check -- README.md docs/README.md docs/implementation.md`
 - [x] Whitespace check: `git diff --check -- README.md AGENTS.md docs/README.md docs/implementation.md feature_list.json progress.md init.sh session-handoff.md`
 - [x] Harness validation: `node templates/.claude/skills/harness-creator/scripts/validate-harness.mjs --target .` reported 100/100.
-- [ ] Full project verification: not run; docs/harness-only changes were checked with focused validation.
+- [x] Full project verification: `./init.sh` run from `master` after merge - `bun install`, `bun run lint` clean, `bun test` 46/46 pass, harness validation 100/100.
 
 ## Notes for Next Session
 
