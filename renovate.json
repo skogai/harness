@@ -1,3 +1,0 @@
-{
-  "extends": ["github>raintree-technology/engineering-standards//configs/renovate/default.json5"]
-}

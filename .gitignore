@@ -90,3 +90,4 @@ backup-*/
 # Archive and documentation (not distributed)
 /archive/
 .claude/skills/**/docs/
+/.claude/worktrees/nelson-harness-test
