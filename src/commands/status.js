@@ -42,7 +42,7 @@ async function diffMcpJsonTarget(targetDir, target, plan) {
 }
 
 async function diffCodexMcps(targetDir, plan) {
-  const block = await readManagedBlock(join(targetDir, '.codex', 'config.toml'), 'hash');
+  const block = await readManagedBlock(join(targetDir, '.codex', 'config.toml'), 'harness:mcp', { commentPrefix: '#' });
   const missing = plan.mcps
     .filter((entry) => !block || !block.includes(`[mcp_servers.${entry.name}]`))
     .map((entry) => entry.name);

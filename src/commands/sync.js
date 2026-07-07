@@ -1,7 +1,8 @@
 import chalk from 'chalk';
 import { readFile, writeFile } from 'fs/promises';
 import { pathExists } from 'fs-extra';
-import { join, resolve } from 'path';
+import { join, resolve, dirname } from 'path';
+import { fileURLToPath } from 'url';
 import {
   copyAgentEssentials,
   copyAgentSkills,
@@ -14,6 +15,9 @@ import { upsertManagedBlock } from '../utils/managed-block.js';
 import { loadManifest, resolveManifest, MANIFEST_FILENAME } from '../manifest.js';
 import { buildMcpServersMap, buildCodexMcpToml, collectEnvReferences } from '../mcps.js';
 import { formatAgentTargets } from '../agents.js';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const BLOCKS_DIR = join(__dirname, '../../templates/blocks');
 
 async function readJsonIfExists(filePath) {
   if (!(await pathExists(filePath))) {
@@ -41,15 +45,18 @@ async function writeMcpServersJson(filePath, mcps) {
   return filePath;
 }
 
+async function renderBlockTemplate(name, replacements) {
+  let content = await readFile(join(BLOCKS_DIR, name), 'utf-8');
+  for (const [key, value] of Object.entries(replacements)) {
+    content = content.replaceAll(`{{${key}}}`, value);
+  }
+  return content;
+}
+
 async function buildClaudeSkillsBlock(skills) {
   const summaries = await getSkillSummaries(skills);
-  return [
-    '## Harness skills',
-    '',
-    'Managed by `skogai.json` — run `npx skogharness@latest sync` after editing it, or `harness sync` with the global CLI.',
-    '',
-    ...summaries.map((skill) => `- \`${skill.id}\`: ${skill.description}`),
-  ].join('\n');
+  const skillList = summaries.map((skill) => `- \`${skill.id}\`: ${skill.description}`).join('\n');
+  return renderBlockTemplate('claude-skills.md', { SKILLS: skillList || '- No skills installed.' });
 }
 
 async function buildCodexBlock(skills) {
@@ -57,13 +64,7 @@ async function buildCodexBlock(skills) {
   const skillList = summaries.map((skill) => (
     `- \`${skill.id}\`: ${skill.description}\n  Read \`.codex/skills/${skill.id}/SKILL.md\` before using this skill.`
   )).join('\n');
-  return [
-    '## Harness skills',
-    '',
-    'When a user request matches one of the skills below, read the matching local skill file before answering, planning, or editing.',
-    '',
-    skillList || '- No skills installed.',
-  ].join('\n');
+  return renderBlockTemplate('codex-skills.md', { SKILLS: skillList || '- No skills installed.' });
 }
 
 async function syncClaude(targetDir, plan, options) {
@@ -84,8 +85,8 @@ async function syncClaude(targetDir, plan, options) {
 
   await upsertManagedBlock(
     join(targetDir, 'CLAUDE.md'),
+    'harness:skills',
     await buildClaudeSkillsBlock(plan.skills),
-    'markdown',
   );
   return writeMcpServersJson(join(targetDir, '.mcp.json'), plan.mcps);
 }
@@ -95,14 +96,15 @@ async function syncCodex(targetDir, plan, options) {
   await copyAgentSkills(targetDir, 'codex', plan.skills, { ...options, force: true });
   await upsertManagedBlock(
     join(targetDir, 'AGENTS.md'),
+    'harness:skills',
     await buildCodexBlock(plan.skills),
-    'markdown',
   );
   if (plan.mcps.length > 0) {
     await upsertManagedBlock(
       join(targetDir, '.codex', 'config.toml'),
+      'harness:mcp',
       buildCodexMcpToml(plan.mcps),
-      'hash',
+      { commentPrefix: '#' },
     );
   }
 }

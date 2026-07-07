@@ -89,14 +89,14 @@ test('managed block upsert preserves surrounding content and is idempotent', asy
   const filePath = join(dir, 'AGENTS.md');
   await writeFile(filePath, '# My project\n\nHand-written notes.\n');
 
-  await upsertManagedBlock(filePath, 'generated v1', 'markdown');
-  await upsertManagedBlock(filePath, 'generated v2', 'markdown');
+  await upsertManagedBlock(filePath, 'harness:generated', 'generated v1');
+  await upsertManagedBlock(filePath, 'harness:generated', 'generated v2');
 
   const content = await readFile(filePath, 'utf-8');
   assert.match(content, /Hand-written notes\./);
   assert.match(content, /generated v2/);
   assert.doesNotMatch(content, /generated v1/);
-  assert.equal(await readManagedBlock(filePath, 'markdown'), 'generated v2');
+  assert.equal(await readManagedBlock(filePath, 'harness:generated'), 'generated v2');
 });
 
 test('sync writes skills and MCP config for all targets and is idempotent', async (t) => {
@@ -155,7 +155,7 @@ test('sync preserves foreign MCP keys and content outside managed markers', asyn
 
   const agentsMd = await readFile(join(dir, 'AGENTS.md'), 'utf-8');
   assert.match(agentsMd, /# Existing guidance/);
-  assert.match(agentsMd, /harness:generated/);
+  assert.match(agentsMd, /harness:skills/);
 });
 
 test('status reports drift and unmanaged entries', async (t) => {
