@@ -1,0 +1,26 @@
+{
+  "source_path": "/home/skogix/.local/share/opencode/worktree/3244143f8f169c874a74e2deadf1dcfb1d207d3d/quick-circuit/docs/README.md",
+  "type": "DOC",
+  "confidence": "medium",
+  "manifest_override": false,
+  "title": "Harness documentation",
+  "summary": "Overview of the docs folder and pointers to deeper skogharness implementation and maintenance documentation.",
+  "scope": [
+    "skogharness",
+    "docs folder",
+    "manifest-driven CLI",
+    "implementation notes",
+    "templates",
+    "skills",
+    "MCP servers",
+    "profiles"
+  ],
+  "cross_refs": [
+    "./implementation.md",
+    "./specs.md",
+    "./features.md"
+  ],
+  "locked": false,
+  "precedence": null,
+  "notes": "Prose-heavy documentation index with links and maintenance guidance; no ADR, PRD, or technical contract signals."
+}
