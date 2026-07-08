@@ -1,0 +1,26 @@
+{
+  "source_path": "/home/skogix/.local/share/opencode/worktree/3244143f8f169c874a74e2deadf1dcfb1d207d3d/quick-circuit/docs/specs.md",
+  "type": "SPEC",
+  "confidence": "high",
+  "manifest_override": false,
+  "title": "Project specs",
+  "summary": "Baseline technical facts for skogharness, including runtime, structure, commands, conventions, and security boundaries.",
+  "scope": [
+    "skogharness",
+    "manifest",
+    "skills",
+    "MCP servers",
+    "stack profiles",
+    "CLI",
+    "runtime",
+    "commands",
+    "security boundaries"
+  ],
+  "cross_refs": [
+    "./implementation.md",
+    "./features.md"
+  ],
+  "locked": false,
+  "precedence": null,
+  "notes": ""
+}

@@ -1,0 +1,29 @@
+{
+  "source_path": "/home/skogix/.local/share/opencode/worktree/3244143f8f169c874a74e2deadf1dcfb1d207d3d/quick-circuit/docs/features.md",
+  "type": "DOC",
+  "confidence": "high",
+  "manifest_override": false,
+  "title": "Features: have, need, want",
+  "summary": "Tracks implemented, missing, and aspirational features for the skogharness CLI and templates.",
+  "scope": [
+    "skogharness",
+    "manifest CLI",
+    "harness commands",
+    "harness-init",
+    "feature surface",
+    "templates",
+    "skills",
+    "plugin marketplace"
+  ],
+  "cross_refs": [
+    "feature_list.json",
+    "docs/implementation.md",
+    "README.md",
+    "progress.md",
+    "session-handoff.md",
+    "CLAUDE.md"
+  ],
+  "locked": false,
+  "precedence": null,
+  "notes": ""
+}
