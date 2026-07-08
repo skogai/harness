@@ -49,6 +49,27 @@
       ],
       "status": "done",
       "evidence": "./init.sh run from master (clean working tree): bun install (no changes), bun run lint clean, bun test 46/46 pass, harness-creator validate-harness.mjs 100/100 across all five subsystems."
+    },
+    {
+      "id": "feat-006",
+      "name": "Harness blueprint documentation",
+      "description": "Produce a Claude Code harness-style blueprint for the skogharness agentic system.",
+      "dependencies": [
+        "feat-001",
+        "feat-002"
+      ],
+      "status": "done",
+      "evidence": "docs/harness-blueprint.md created/refined using the claude-code-harness blueprint contract. Focused verification: git diff --check -- docs/harness-blueprint.md passed."
+    },
+    {
+      "id": "feat-007",
+      "name": "Session hooks verification spec and plan",
+      "description": "Write the Superpowers design spec and implementation plan for startup context injection and stop-time verification.",
+      "dependencies": [
+        "feat-006"
+      ],
+      "status": "done",
+      "evidence": "docs/superpowers/specs/2026-07-08-session-hooks-verification-design.md and docs/superpowers/plans/2026-07-08-session-hooks-verification.md created. Focused verification: feature_list.json parsed, placeholder scan clean, git diff --check passed for tracked state files, and --no-index/content whitespace scans passed for new spec/plan files."
     }
   ]
 }
