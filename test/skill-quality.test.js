@@ -119,6 +119,13 @@ test('every registered skill has a top-level template', async () => {
   }
 });
 
+test('registered skill ids are unique', () => {
+  const ids = SKILLS.map((skill) => skill.id);
+  const duplicates = ids.filter((id, index) => ids.indexOf(id) !== index);
+
+  assert.deepEqual([...new Set(duplicates)], []);
+});
+
 test('long reference files include a table of contents', async () => {
   const referenceFiles = (await walk(SKILLS_ROOT)).filter((file) => file.includes('/references/'));
 

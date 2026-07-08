@@ -2,8 +2,8 @@
 
 ## Current Objective
 
-- Goal: Produce the Superpowers design spec and implementation plan for session-start context injection and stop-time verification.
-- Current status: Spec and implementation plan are complete; focused docs verification passed.
+- Goal: Fix the failing generated Codex target skill-output test.
+- Current status: Duplicate registered skill ids were removed, a uniqueness regression test was added, and lint/tests pass.
 - Branch / commit: current branch `codex/superpowers`; latest known merged baseline was `master` at `8a68ae8 feat: add harness startup scaffold`.
 
 ## Completed This Session
@@ -24,6 +24,10 @@
 - [x] Added `docs/superpowers/plans/2026-07-08-session-hooks-verification.md`.
 - [x] Added `feat-007` to `feature_list.json` and marked it done with focused verification evidence.
 - [x] Updated `progress.md` and this handoff for the spec/plan pass.
+- [x] Removed duplicate `harness-creator` and `toon-formatter` rows from `src/profiles.js`.
+- [x] Added `registered skill ids are unique` coverage in `test/skill-quality.test.js`.
+- [x] Added `feat-008` to `feature_list.json` and marked it done with lint/test evidence.
+- [x] Updated `progress.md` and this handoff for the registry fix.
 
 ## Verification Evidence
 
@@ -39,6 +43,9 @@
 | Full init | `./init.sh` | Pass | install + lint + test + harness audit (100/100), run from `master`. |
 | Blueprint whitespace | `git diff --check -- docs/harness-blueprint.md` | Pass | Focused docs-only check for the blueprint file. |
 | Spec/plan checks | JSON parse, placeholder `rg`, `git diff --check` for tracked state files, `git diff --check --no-index` for new docs, and whitespace/newline scan | Pass | Focused docs/state checks for the spec and plan files. |
+| Registry tests | `bun run test` | Pass, 47/47 | Includes new duplicate skill-id guard. |
+| Registry lint | `bun run lint` | Pass | ESLint clean after registry/test changes. |
+| Full registry verification | `./init.sh` | Pass | install + lint + 47 tests + harness validation 100/100. |
 
 ## Files Changed
 
@@ -59,6 +66,8 @@
 - `session-handoff.md`
 - `docs/superpowers/specs/2026-07-08-session-hooks-verification-design.md`
 - `docs/superpowers/plans/2026-07-08-session-hooks-verification.md`
+- `src/profiles.js`
+- `test/skill-quality.test.js`
 
 ## Decisions Made
 
@@ -67,10 +76,11 @@
 - Scaffold state/lifecycle files as a first-class `skogharness harness-init` command in `src/`, not a one-off external script, since this repo's product is itself a harness installer.
 - Frame the blueprint as governance around host agents, not as a claim that `skogharness` owns the model turn loop.
 - Use `skoghooks`, `skogai-jq`, and `skogai-tests` as the design substrate for lifecycle reliability instead of designing a new hook framework.
+- Keep `SKILLS` ids unique; generated Codex installs write `.codex/skills/<id>/SKILL.md` once per registered id unless explicitly forced.
 
 ## Blockers / Risks
 
-- None currently open for the spec/plan pass. The worktree still contains other untracked files that predate or sit outside this documentation update, so review the diff before committing.
+- None currently open for the registry fix. `src/profiles.js` already had staged changes before this fix; the duplicate-removal patch is currently unstaged on top of that staged content.
 
 ## Next Session Startup
 

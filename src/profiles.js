@@ -1,6 +1,47 @@
 export const SKILLS = [
   { id: 'harness-creator', category: 'development', name: 'Harness creator' },
   { id: 'toon-formatter', category: 'utilities', name: 'TOON formatter' },
+  {
+    id: 'agent-entrypoint-design',
+    category: 'harness',
+    name: 'agent-entrypoint-design',
+  },
+  {
+    id: 'agent-ledger-and-delivery',
+    category: 'harness',
+    name: 'agent-ledger-and-delivery',
+  },
+  {
+    id: 'atomic-commit-discipline',
+    category: 'harness',
+    name: 'atomic-commit-discipline',
+  },
+  {
+    id: 'design-doc-and-task-board',
+    category: 'harness',
+    name: 'design-doc-and-task-board',
+  },
+  { id: 'quality-gardening', category: 'harness', name: 'quality-gardening' },
+  {
+    id: 'repo-contracts-and-boundaries',
+    category: 'harness',
+    name: 'repo-contracts-and-boundaries',
+  },
+  {
+    id: 'repo-harness-assessment',
+    category: 'harness',
+    name: 'repo-harness-assessment',
+  },
+  {
+    id: 'runtime-evidence-and-tracing',
+    category: 'harness',
+    name: 'runtime-evidence-and-tracing',
+  },
+  {
+    id: 'validation-harness-design',
+    category: 'harness',
+    name: 'validation-harness-design',
+  },
 ];
 
 export const profiles = {
@@ -10,7 +51,13 @@ export const profiles = {
     skills: SKILLS.map((s) => s.id),
     toon: true,
     hooks: false,
-    commands: ['analyze-tokens', 'convert-to-toon', 'toon-decode', 'toon-encode', 'toon-validate'],
+    commands: [
+      'analyze-tokens',
+      'convert-to-toon',
+      'toon-decode',
+      'toon-encode',
+      'toon-validate',
+    ],
   },
 
   minimal: {
@@ -19,7 +66,13 @@ export const profiles = {
     skills: ['toon-formatter'],
     toon: true,
     hooks: false,
-    commands: ['analyze-tokens', 'convert-to-toon', 'toon-decode', 'toon-encode', 'toon-validate'],
+    commands: [
+      'analyze-tokens',
+      'convert-to-toon',
+      'toon-decode',
+      'toon-encode',
+      'toon-validate',
+    ],
   },
 
   custom: {

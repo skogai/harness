@@ -70,6 +70,14 @@
       ],
       "status": "done",
       "evidence": "docs/superpowers/specs/2026-07-08-session-hooks-verification-design.md and docs/superpowers/plans/2026-07-08-session-hooks-verification.md created. Focused verification: feature_list.json parsed, placeholder scan clean, git diff --check passed for tracked state files, and --no-index/content whitespace scans passed for new spec/plan files."
+    },
+    {
+      "id": "feat-008",
+      "name": "Skill registry uniqueness guard",
+      "description": "Fix duplicated skill registrations so generated Codex target installs each skill once, and add a test that rejects duplicate registered skill ids.",
+      "dependencies": [],
+      "status": "done",
+      "evidence": "Removed duplicate harness-creator and toon-formatter rows from src/profiles.js, added registered skill ids are unique coverage in test/skill-quality.test.js. bun run test passed 47/47; bun run lint passed; ./init.sh passed with harness validation 100/100."
     }
   ]
 }

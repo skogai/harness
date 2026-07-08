@@ -2,8 +2,8 @@
 
 ## Current State
 
-**Last Updated:** 2026-07-08 01:24 CEST
-**Active Feature:** none - session hooks verification spec and plan complete
+**Last Updated:** 2026-07-08 21:25 CEST
+**Active Feature:** none - skill registry uniqueness guard complete
 
 ## Status
 
@@ -22,6 +22,9 @@
 - [x] Added `docs/superpowers/specs/2026-07-08-session-hooks-verification-design.md`.
 - [x] Added `docs/superpowers/plans/2026-07-08-session-hooks-verification.md`.
 - [x] Recorded `feat-007` as complete in `feature_list.json`.
+- [x] Removed duplicate `harness-creator` and `toon-formatter` rows from `src/profiles.js` so Codex skill generation writes each target once.
+- [x] Added a `registered skill ids are unique` test in `test/skill-quality.test.js`.
+- [x] Recorded `feat-008` as complete in `feature_list.json`.
 
 ### What's In Progress
 
@@ -53,6 +56,8 @@
   - Context: the `claude-code-harness` skill requires explicit separation between model, harness runtime, external tools, durable storage, and human operators.
 - **Session reliability should reuse existing SkogAI pieces**: startup and stop lifecycle wiring belongs to `skoghooks`, JSON state handling should follow `skogai-jq`, and acceptance tests should follow `skogai-tests`.
   - Context: the user pointed out these projects already contain the needed basics, so the spec avoids a new hook framework.
+- **Skill ids must remain unique in `SKILLS`**: category labels can group skills, but duplicate ids cause generated Codex installs to try writing the same `.codex/skills/<id>/SKILL.md` twice without `--force`.
+  - Context: `bun run test` failed on generated Codex target output after `harness-creator` and `toon-formatter` were registered twice.
 
 ## Files Modified This Session
 
@@ -71,6 +76,9 @@
 - `docs/superpowers/specs/2026-07-08-session-hooks-verification-design.md` - design spec for startup context injection and stop-time verification.
 - `docs/superpowers/plans/2026-07-08-session-hooks-verification.md` - implementation plan for the spec.
 - `feature_list.json`, `progress.md`, `session-handoff.md` - recorded spec/plan status and verification evidence.
+- `src/profiles.js` - removed duplicate skill registrations and restored quote style.
+- `test/skill-quality.test.js` - added a uniqueness regression test for registered skill ids.
+- `feature_list.json`, `progress.md`, `session-handoff.md` - recorded the registry fix and verification evidence.
 
 ## Evidence of Completion
 
@@ -80,6 +88,9 @@
 - [x] Full project verification: `./init.sh` run from `master` after merge - `bun install`, `bun run lint` clean, `bun test` 46/46 pass, harness validation 100/100.
 - [x] Blueprint whitespace check: `git diff --check -- docs/harness-blueprint.md`.
 - [x] Spec/plan checks: `node -e "JSON.parse(...feature_list.json...)"`, placeholder `rg`, `git diff --check -- feature_list.json progress.md session-handoff.md`, `git diff --check --no-index -- /dev/null <new-doc>`, and final whitespace/newline content scan.
+- [x] Registry fix test suite: `bun run test` passed 47/47.
+- [x] Registry fix lint: `bun run lint` passed.
+- [x] Full registry fix verification: `./init.sh` passed, including install, lint, 47 tests, and harness validation 100/100.
 
 ## Notes for Next Session
 
