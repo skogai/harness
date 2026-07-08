@@ -8,7 +8,7 @@ import { runSync } from './sync.js';
 async function loadManifestOrFail(targetDir) {
   const manifest = await loadManifest(targetDir);
   if (!manifest) {
-    throw new Error(`No ${MANIFEST_FILENAME} found in ${targetDir}. Run \`npx skogharness@latest init\` first.`);
+    throw new Error(`No ${MANIFEST_FILENAME} found in ${targetDir}. Run \`npx --yes github:skogai/harness init\` first.`);
   }
   return manifest;
 }
@@ -66,7 +66,7 @@ export async function addSkill(name, options = {}) {
     const manifest = await loadManifestOrFail(targetDir);
 
     if (!SKILLS.some((skill) => skill.id === name)) {
-      throw new Error(`Unknown skill: ${name}. Run \`npx skogharness@latest init\` to see available skills.`);
+      throw new Error(`Unknown skill: ${name}. Run \`npx --yes github:skogai/harness init\` to see available skills.`);
     }
 
     manifest.version ??= MANIFEST_VERSION;

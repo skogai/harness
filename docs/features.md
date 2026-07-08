@@ -32,7 +32,7 @@ Core manifest CLI (`skogai.json` -> native agent config):
 Supporting modules: `src/manifest.js` (load/validate/resolve `skogai.json`),
 `src/agents.js` (targets: `claude`, `codex`, `all`), `src/mcps.js` (MCP
 catalog, TOML/JSON builders, env-var collection), `src/profiles.js` (preset
-profiles: `all`/`minimal`/`custom`).
+profiles: `all`/`harness-meta`/`minimal`/`custom`).
 
 Shared utilities (`src/utils/`): `security.js` (path traversal / skill-path /
 command-name validation, log sanitizing), `managed-block.js` (idempotent

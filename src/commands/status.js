@@ -53,7 +53,7 @@ export async function getStatus(dir = '.') {
   const targetDir = resolve(dir);
   const manifest = await loadManifest(targetDir);
   if (!manifest) {
-    throw new Error(`No ${MANIFEST_FILENAME} found in ${targetDir}. Run \`npx skogharness@latest init\` first.`);
+    throw new Error(`No ${MANIFEST_FILENAME} found in ${targetDir}. Run \`npx --yes github:skogai/harness init\` first.`);
   }
   const plan = resolveManifest(manifest);
   const report = { plan, targets: {} };
@@ -115,7 +115,7 @@ export async function status(dir = '.') {
     console.log('');
     if (!report.inSync) {
       console.log(chalk.yellow(
-        'Run `npx skogharness@latest sync` to reconcile, or `harness sync` with the global CLI.\n',
+        'Run `npx --yes github:skogai/harness sync` to reconcile, or `harness sync` with the global CLI.\n',
       ));
       process.exitCode = 1;
     }

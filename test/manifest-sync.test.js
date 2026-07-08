@@ -64,6 +64,19 @@ test('resolveManifest merges profile skills/mcps with explicit entries', () => {
   assert.equal(github.command, 'custom-binary', 'explicit MCP entry present in resolved plan');
 });
 
+test('harness-meta profile resolves as the self-hosting full skill set', () => {
+  const plan = resolveManifest({
+    version: 1,
+    profile: 'harness-meta',
+    targets: ['claude', 'codex'],
+  });
+
+  const allProfile = getProfile('all');
+  assert.deepEqual(plan.skills, allProfile.skills);
+  assert.equal(plan.toon, true);
+  assert.deepEqual(plan.commands, allProfile.commands);
+});
+
 test('env reference collection finds ${VAR} across env, headers, args, url', () => {
   const vars = collectEnvReferences([
     { name: 'a', command: 'npx', args: ['--key=${KEY_ONE}'], env: { TOKEN: '${KEY_TWO}' } },

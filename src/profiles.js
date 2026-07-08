@@ -44,20 +44,33 @@ export const SKILLS = [
   },
 ];
 
+const TOON_COMMANDS = [
+  'analyze-tokens',
+  'convert-to-toon',
+  'toon-decode',
+  'toon-encode',
+  'toon-validate',
+];
+
+const ALL_SKILL_IDS = SKILLS.map((s) => s.id);
+
 export const profiles = {
   all: {
     name: 'All skills',
     description: 'Every shipped skill',
-    skills: SKILLS.map((s) => s.id),
+    skills: ALL_SKILL_IDS,
     toon: true,
     hooks: false,
-    commands: [
-      'analyze-tokens',
-      'convert-to-toon',
-      'toon-decode',
-      'toon-encode',
-      'toon-validate',
-    ],
+    commands: TOON_COMMANDS,
+  },
+
+  'harness-meta': {
+    name: 'Harness/SkogAI meta',
+    description: 'Self-hosting profile for repositories that define or govern agent harness behavior',
+    skills: ALL_SKILL_IDS,
+    toon: true,
+    hooks: false,
+    commands: TOON_COMMANDS,
   },
 
   minimal: {
@@ -66,13 +79,7 @@ export const profiles = {
     skills: ['toon-formatter'],
     toon: true,
     hooks: false,
-    commands: [
-      'analyze-tokens',
-      'convert-to-toon',
-      'toon-decode',
-      'toon-encode',
-      'toon-validate',
-    ],
+    commands: TOON_COMMANDS,
   },
 
   custom: {

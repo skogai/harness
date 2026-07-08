@@ -231,9 +231,9 @@ export async function init(dir = '.', options = {}) {
       console.log(`     ${chalk.cyan(join(targetDir, 'AGENTS.md'))}`);
     }
     console.log(chalk.dim('  Re-sync from skogai.json:'));
-    console.log(`     ${chalk.cyan('npx skogharness@latest sync')}`);
+    console.log(`     ${chalk.cyan('npx --yes github:skogai/harness sync')}`);
     console.log(chalk.dim('  Optional global CLI for repeated sync/status/add:'));
-    console.log(`     ${chalk.cyan('npm i -g skogharness')}`);
+    console.log(`     ${chalk.cyan('npm i -g github:skogai/harness')}`);
     console.log(`     ${chalk.cyan('harness sync')}`);
     console.log('');
   } catch (error) {

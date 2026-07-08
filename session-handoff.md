@@ -2,8 +2,8 @@
 
 ## Current Objective
 
-- Goal: Fix the failing generated Codex target skill-output test.
-- Current status: Duplicate registered skill ids were removed, a uniqueness regression test was added, and lint/tests pass.
+- Goal: Make sync guidance runnable and give this repo a named self-hosting profile.
+- Current status: `harness-meta` was added and selected in `skogai.json`; broken npm-backed npx guidance was replaced with the verified GitHub-backed form; local npx package sync, status, whitespace, and full tests pass.
 - Branch / commit: current branch `codex/superpowers`; latest known merged baseline was `master` at `8a68ae8 feat: add harness startup scaffold`.
 
 ## Completed This Session
@@ -28,6 +28,13 @@
 - [x] Added `registered skill ids are unique` coverage in `test/skill-quality.test.js`.
 - [x] Added `feat-008` to `feature_list.json` and marked it done with lint/test evidence.
 - [x] Updated `progress.md` and this handoff for the registry fix.
+- [x] Verified `npx skogharness@latest sync` fails with npm 404 because `skogharness` is not currently available from the public npm registry.
+- [x] Verified `npx --yes github:skogai/harness --help` is runnable.
+- [x] Added `harness-meta` in `src/profiles.js` and switched root `skogai.json` to it.
+- [x] Updated generated/user-facing guidance to use `npx --yes github:skogai/harness sync`, with `harness sync` as the global-install option.
+- [x] Added `harness-meta` profile coverage in `test/manifest-sync.test.js`.
+- [x] Regenerated sync outputs for Claude and Codex.
+- [x] Added `feat-009` to `feature_list.json` and updated progress/handoff evidence.
 
 ## Verification Evidence
 
@@ -46,6 +53,12 @@
 | Registry tests | `bun run test` | Pass, 47/47 | Includes new duplicate skill-id guard. |
 | Registry lint | `bun run lint` | Pass | ESLint clean after registry/test changes. |
 | Full registry verification | `./init.sh` | Pass | install + lint + 47 tests + harness validation 100/100. |
+| Exact npm npx check | `npx --yes skogharness@latest sync .` | Fail | npm 404; proves the previous generated guidance was not runnable from the public registry. |
+| GitHub npx check | `npx --yes github:skogai/harness --help` | Pass | Verifies a no-install command form exists. |
+| Local npx sync | `npx --yes --package . harness sync <tmpdir>` | Pass | Verifies the current package supports `profile: harness-meta`. |
+| Current status | `node bin/cli.js status .` | Pass | Claude Code and Codex in sync for `profile: harness-meta`. |
+| Tests | `npm test` | Pass, 47/47 | Full test suite. |
+| Whitespace | `git diff --check` | Pass | No whitespace errors. |
 
 ## Files Changed
 
@@ -68,6 +81,15 @@
 - `docs/superpowers/plans/2026-07-08-session-hooks-verification.md`
 - `src/profiles.js`
 - `test/skill-quality.test.js`
+- `skogai.json`
+- `templates/blocks/claude-skills.md`
+- `src/commands/add.js`
+- `src/commands/init.js`
+- `src/commands/status.js`
+- `src/commands/sync.js`
+- `README.md`
+- `test/manifest-sync.test.js`
+- generated `AGENTS.md`, `CLAUDE.md`, `.claude/`, and `.codex/` outputs from sync
 
 ## Decisions Made
 
@@ -77,10 +99,14 @@
 - Frame the blueprint as governance around host agents, not as a claim that `skogharness` owns the model turn loop.
 - Use `skoghooks`, `skogai-jq`, and `skogai-tests` as the design substrate for lifecycle reliability instead of designing a new hook framework.
 - Keep `SKILLS` ids unique; generated Codex installs write `.codex/skills/<id>/SKILL.md` once per registered id unless explicitly forced.
+- Use `harness-meta` for repos that are self-hosting the SkogAI/harness operating layer; keep `all` as the generic "every shipped skill" preset.
+- Do not advertise `npx skogharness@latest` until the package exists on npm; the currently verified no-install form is `npx --yes github:skogai/harness`.
 
 ## Blockers / Risks
 
-- None currently open for the registry fix. `src/profiles.js` already had staged changes before this fix; the duplicate-removal patch is currently unstaged on top of that staged content.
+- `npx --yes github:skogai/harness sync` cannot sync manifests using `profile: "harness-meta"` until that GitHub package source includes this new profile.
+- `npx skogharness@latest sync` is still not runnable because npm returns 404 for `skogharness`.
+- `.claude/skills/` remains ignored by `.gitignore`, so generated Claude skill outputs need an explicit tracking decision if `skogai.json` stays committed with `claude` target enabled.
 
 ## Next Session Startup
 
@@ -92,7 +118,6 @@
 
 ## Recommended Next Step
 
-- Review and commit the blueprint/spec/plan docs and lifecycle changes if they should be kept.
-- Implement `docs/superpowers/plans/2026-07-08-session-hooks-verification.md` using `superpowers:subagent-driven-development` or `superpowers:executing-plans`.
-- Check `git status`/`git log origin/master..master` and push if `master` is ahead of `origin`.
-- Pick the next feature to work on; none is currently active.
+- Decide whether to commit generated `.codex/` and `.claude/` outputs, and whether to change `.gitignore` for `.claude/skills/`.
+- Merge/publish the profile and guidance changes before relying on GitHub-backed npx for `harness-meta` manifests.
+- Then return to the session hooks plan if that remains the next product feature.

@@ -225,7 +225,7 @@ step 7–8 of the loop.
   `toon-formatter`, `harness-creator`), installed via manifest + sync.
 - **MCP servers** — catalog in `src/mcps.js` plus custom
   `--command`/`--url` entries; all through `harness add mcp`.
-- **Profiles** — `src/profiles.js` presets (`all`, `minimal`, `custom`) as
+- **Profiles** — `src/profiles.js` presets (`all`, `harness-meta`, `minimal`, `custom`) as
   the coarse feature gate.
 - **Agent targets** — `claude`, `codex` today; a new target is a new
   projection in sync, not a new architecture.

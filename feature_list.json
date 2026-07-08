@@ -78,6 +78,16 @@
       "dependencies": [],
       "status": "done",
       "evidence": "Removed duplicate harness-creator and toon-formatter rows from src/profiles.js, added registered skill ids are unique coverage in test/skill-quality.test.js. bun run test passed 47/47; bun run lint passed; ./init.sh passed with harness validation 100/100."
+    },
+    {
+      "id": "feat-009",
+      "name": "Runnable sync guidance and harness meta profile",
+      "description": "Replace broken npm-registry npx guidance with a runnable GitHub-backed command and add a harness-meta profile for self-hosting SkogAI/harness repositories.",
+      "dependencies": [
+        "feat-008"
+      ],
+      "status": "done",
+      "evidence": "Verified npx skogharness@latest sync fails with npm 404; verified npx --yes github:skogai/harness --help works; verified npx --yes --package . harness sync against a temp skogai.json works with profile harness-meta. npm test passed 47/47; git diff --check passed; node bin/cli.js status . reports Claude Code and Codex in sync."
     }
   ]
 }

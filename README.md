@@ -5,7 +5,7 @@ Declarative agent config for Claude Code and Codex: a `skogai.json` manifest for
 ## Install
 
 ```bash
-npx skogharness@latest
+npx --yes github:skogai/harness
 # or, for a local global install:
 bun run install:global
 ```
@@ -19,7 +19,7 @@ harness init [dir]              # initialize harness in a directory (default com
   -y, --yes                     # skip confirmation prompts
   -f, --force                   # overwrite existing files
   --agent <list>                # agent target(s): claude, codex, or all (default: claude)
-  --profile <name>               # preset profile: all, minimal, custom
+  --profile <name>               # preset profile: all, harness-meta, minimal, custom
   --skills <list>                # comma-separated skills to install
   --no-toon                      # skip TOON utilities
 

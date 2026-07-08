@@ -25,7 +25,7 @@ program
   .option('-y, --yes', 'Skip confirmation prompts')
   .option('-f, --force', 'Overwrite existing files')
   .option('--agent <list>', 'Agent target(s): claude, codex, or all', 'claude')
-  .option('--profile <name>', 'Use preset profile (all, minimal, custom)')
+  .option('--profile <name>', 'Use preset profile (all, harness-meta, minimal, custom)')
   .option('--skills <list>', 'Comma-separated skills to install')
   .option('--no-toon', 'Skip TOON utilities')
   .action(init);

@@ -1,14 +1,5 @@
 # Claude Code local settings
 .claude/settings.local.json
-.claude/skills/
-
-# Skills installer scratch output
-/.agents/
-/.crush/
-/.goose/
-/.pi/
-/skills/
-/skills-lock.json
 
 # macOS
 .DS_Store
@@ -67,12 +58,6 @@ zig-cache/
 .temp/
 .cache/
 
-# Project tracking files (temporary reports)
-AUDIT.md
-COMPLETION_REPORT.md
-*_REPORT.md
-build_simple.sh
-
 # Backups
 *.backup
 *.bak
@@ -86,10 +71,4 @@ backup-*/
 
 # Claude Code backups
 .claude.backup.*
-
-# Archive and documentation (not distributed)
-/archive/
-.claude/skills/**/docs/
-/.claude/worktrees/nelson-harness-test
-templates/.claude/.claude/data/sessions/019f3d3d-fd7b-7561-a2c0-05dc019e34c4.json
 /.claude/worktrees
