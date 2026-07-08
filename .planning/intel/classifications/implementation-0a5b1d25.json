@@ -1,0 +1,41 @@
+{
+  "source_path": "/home/skogix/.local/share/opencode/worktree/3244143f8f169c874a74e2deadf1dcfb1d207d3d/quick-circuit/docs/implementation.md",
+  "type": "DOC",
+  "confidence": "high",
+  "manifest_override": false,
+  "title": "Implementation approach",
+  "summary": "Explains skogharness architecture, data flow, manifest resolution, generated output strategy, templates, and security boundaries.",
+  "scope": [
+    "skogharness",
+    "skogai.json",
+    "CLI",
+    "manifest resolution",
+    "managed output",
+    "agent targets",
+    "templates",
+    "MCP servers",
+    "security boundaries"
+  ],
+  "cross_refs": [
+    "skogai.json",
+    "bin/cli.js",
+    "src/commands/",
+    "src/manifest.js",
+    "src/agents.js",
+    "src/mcps.js",
+    "src/profiles.js",
+    "src/utils/",
+    "templates/",
+    "test/",
+    "CLAUDE.md",
+    "AGENTS.md",
+    "templates/.claude/",
+    "templates/codex/",
+    ".env.example",
+    "README",
+    "docs/"
+  ],
+  "locked": false,
+  "precedence": null,
+  "notes": ""
+}
