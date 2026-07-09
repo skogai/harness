@@ -2,9 +2,9 @@
 
 ## Current Objective
 
-- Goal: Plan the next harness lifecycle features after the self-hosting sync work was merged and pushed.
-- Current status: `feat-010` is planned as the next feature: review documentation and state files, then classify what is current/in-use, proposed/future, or stale/superseded. `feat-011` and `feat-012` are proposed follow-ons for the turn lifecycle contract and validator command surface.
-- Branch / commit: current branch `master`; worktree was clean before this planning update.
+- Goal: Design and plan a `.skogai/` state directory (parallel to `.claude/`/`.codex/`) with a self-describing template object model, replacing the ad hoc overlap between `init`, `harness-init`, and `sync` for state scaffolding.
+- Current status: planning-only pass complete. `docs/dot-skogai-templates.md` written; `feat-013`..`feat-017` added to `feature_list.json` (status `pending`), each cast as intent / needed input / expected output. No engine/CLI code written yet — `feat-013` (manifest schema) is next up. `feat-010`..`feat-012` (docs currency map, turn lifecycle contract, validator surface) remain independently queued and unstarted.
+- Branch / commit: current branch `master`; changes not yet committed (`feature_list.json` modified, `docs/dot-skogai-templates.md` new, `progress.md`/`session-handoff.md` updated). Some pre-existing uncommitted changes from before this session (`skogai.json`, `src/profiles.js`, `test/manifest-sync.test.js`, staged `.skogai`) are untouched by this pass.
 
 ## Completed This Session
 
@@ -40,6 +40,11 @@
 - [x] Added `feat-011` turn lifecycle contract as a proposed follow-on.
 - [x] Added `feat-012` template script validator surface as a proposed follow-on.
 - [x] Updated progress/handoff so the next step is to classify docs as current/in-use, proposed/future, or stale/superseded.
+- [x] Designed the `.skogai/` template architecture: state directory parallel to `.claude`/`.codex`; `templates/` mirrors the real output tree 1:1 (`templates/codex/`→`templates/.codex/`, `templates/blocks/`→`templates/prompts/`, new `templates/.skogai/`); templates are self-describing frontmatter objects (modeled on skogix's `~/.skogai/projects/harness/templates/QUESTIONS.list`), not a hardcoded copy map; fields resolve via env → `skogai.json` → frontmatter → default cascade; Claude Code only this round.
+- [x] Wrote `docs/dot-skogai-templates.md` as the index doc.
+- [x] Added `feat-013`..`feat-017` to `feature_list.json` (status `pending`): manifest schema, functional contract, template engine, `templates/` mirror + `.skogai/` content + wiring (retiring `harness-init`), status drift detection + docs/test close-out.
+- [x] Ran `./init.sh`: install clean, lint clean, 47/47 tests pass, harness validation 80/100 (pre-existing gaps, unrelated to this pass).
+- [x] Updated `progress.md` and this handoff for the `.skogai/` planning pass.
 
 ## Verification Evidence
 
@@ -66,6 +71,9 @@
 | Whitespace | `git diff --check` | Pass | No whitespace errors. |
 | Planning state | `node -e "JSON.parse(require('fs').readFileSync('feature_list.json','utf8'))"` | Pass | Confirms proposed feature additions keep JSON valid. |
 | Whitespace | `git diff --check` | Pass | Focused planning/state update has no whitespace errors. |
+| Planning state | `node -e "JSON.parse(require('fs').readFileSync('feature_list.json'))"` | Pass | Confirms `feat-013`..`feat-017` keep JSON valid. |
+| Whitespace | `git diff --check -- feature_list.json docs/dot-skogai-templates.md` | Pass | No whitespace errors in new/changed files. |
+| Full init | `./init.sh` | Pass, 80/100 harness validation | install clean, lint clean, 47/47 tests; harness validation FAILs (startup workflow, definition of done, one-feature-at-a-time, completion gate, end-of-session procedure) predate this pass. |
 
 ## Files Changed
 
@@ -100,6 +108,9 @@
 - `feature_list.json` - added `feat-010`, `feat-011`, and `feat-012`.
 - `progress.md` - updated next-step guidance for the documentation currency pass.
 - `session-handoff.md` - updated startup context for the next session.
+- `docs/dot-skogai-templates.md` - new index doc for the `.skogai/` template architecture.
+- `feature_list.json` - added `feat-013`..`feat-017` for the `.skogai/` work, status `pending`.
+- `progress.md`, `session-handoff.md` - updated for the `.skogai/` planning pass.
 
 ## Decisions Made
 
@@ -114,23 +125,31 @@
 - Define a harness "turn" before adding more hook implementations. A turn starts from a user message, hook event, resume, or other initiative source and ends when the agent returns the final response or hook decision.
 - Treat `./init.sh` as one verification command inside the turn lifecycle, not as the complete lifecycle boundary.
 - Do a documentation currency pass before implementing the turn lifecycle, because current docs mix implemented behavior with future hook/turn proposals.
+- State gets its own directory, `.skogai/`, parallel to `.claude/`/`.codex/`; only `skogai.json` stays loose at project root. This repo's own root state files are explicitly not migrated in this pass — they govern the current session via `SKOGAI.md`.
+- `templates/` mirrors the real installed output tree 1:1 (fixes the latent `.codex` naming mismatch, clarifies `blocks/` are spliced prompt fragments, adds `templates/.skogai/`).
+- A template is a self-describing frontmatter object (`type`, `permalink`, `tag`, `symlink-source`, `symlink-target`), not a hardcoded copy-map entry; only `type: template` is engine-actionable.
+- Templated fields resolve via one generic cascade: env var → `skogai.json` → template frontmatter → hardcoded default. Symlink-vs-copy is just another field resolved this way, not a separate decision.
+- This round of `.skogai/` work targets Claude Code only; Codex wiring is deferred.
+- Every feature description is written as intent / needed input / expected output (skogix's explicit directive, applied going forward).
 
 ## Blockers / Risks
 
 - `npx skogharness@latest sync` is still not runnable because npm returns 404 for `skogharness`.
 - Documentation surfaces are not yet labeled by maturity. The next pass must identify current/in-use docs, proposed/future docs, and stale/superseded docs before implementation continues.
 - `templates/.claude/scripts/*.py` contains useful validators that are not clearly documented or wired into package scripts.
+- `harness-creator` validation currently reports 80/100 (instructions 3/5, scope 3/5, lifecycle 4/5): "startup workflow documented," "definition of done documented," "one-feature-at-a-time rule," "completion gate limits scope closure," "end-of-session procedure exists" all FAIL. Predates this pass; likely an `AGENTS.md`/`SKOGAI.md` wording fix, not a new feature.
+- Open question for `feat-013` kickoff: does "harness.json schema" (skogix's phrasing) mean formalizing the existing `skogai.json` manifest (assumed here), or a separate generated `harness.json` file? Confirm before implementing, don't assume further.
 
 ## Next Session Startup
 
 1. Read `AGENTS.md`.
 2. Read `feature_list.json` and `progress.md`.
-3. Review this handoff.
+3. Review this handoff and `docs/dot-skogai-templates.md`.
 4. Run focused checks for docs/state-only work, or `./init.sh` before code changes.
-5. Start `feat-010` unless the user redirects.
+5. Start `feat-013` (`.skogai/` manifest schema) unless the user redirects to `feat-010`..`feat-012`.
 
 ## Recommended Next Step
 
-- Execute `feat-010`: review README, AGENTS.md, CLAUDE.md, docs/, generated `.claude`/`.codex` guidance, and lifecycle state files. Produce a map of current/in-use, proposed/future, and stale/superseded documentation.
-- Include the unadvertised `templates/.claude/scripts/*.py` validators in that pass and decide whether they belong in package scripts, `init.sh`, or separate validation docs.
-- After the docs map is current, write `feat-011` as the turn lifecycle contract and use the existing session hooks spec as supporting input.
+- Execute `feat-013`: formalize a JSON Schema for `skogai.json` (proposed location `templates/skogai.schema.json`) covering current fields (`version`, `targets`, `profile`, `skills`, `mcps`, `model`) plus the new `state` and `templates` fields the `.skogai/` work needs. Confirm the "harness.json" vs "skogai.json" naming question first (see Blockers).
+- Then `feat-014`: write the functional contract (every exposed function/CLI surface with input/output types) before any engine code in `feat-015`.
+- `feat-010`..`feat-012` (docs currency map, turn lifecycle contract, validator surface) remain independently queued if the user wants to prioritize those instead.

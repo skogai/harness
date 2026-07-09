@@ -118,6 +118,58 @@
       ],
       "status": "proposed",
       "evidence": "templates/.claude/scripts/*.py currently contains validators and tests, but they are not surfaced in README, docs, init.sh, or package scripts."
+    },
+    {
+      "id": "feat-013",
+      "name": ".skogai/ manifest schema",
+      "description": "Intent: formalize skogai.json's contract mechanically (today validateManifest() in src/manifest.js hand-checks fields with no schema artifact) and extend it with the two fields the .skogai/ template work needs: state (boolean, derived or explicit) and templates (override map keyed by permalink). Needed input: current src/manifest.js (validateManifest, resolveManifest), current field set (version, targets, profile, skills, mcps, model). Expected output: a JSON Schema file (proposed: templates/skogai.schema.json) covering all current + new fields, plus a decision on whether validateManifest() delegates to it or is checked against it in tests.",
+      "dependencies": [],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "feat-014",
+      "name": ".skogai/ functional contract",
+      "description": "Intent: write down every function/CLI surface the harness exposes -- existing (init, sync/runSync, status/getStatus, addMcp/addSkill) and new (parseTemplate, resolveField, ACTIONS, deployTemplates) -- with explicit input/output types and side effects, before any engine code is implemented. Needed input: src/index.js current exports, sketched template-engine signatures, feat-013's schema (for manifest.templates typing). Expected output: a contract section (in docs/dot-skogai-templates.md or a dedicated docs/api-contract.md) listing, per function: signature, input shape, output shape, side effects (filesystem writes, symlinks -- no network).",
+      "dependencies": [
+        "feat-013"
+      ],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "feat-015",
+      "name": "Template object model & resolution engine",
+      "description": "Intent: implement exactly the contract from feat-014, no more. Needed input: feat-013 (schema), feat-014 (contract). Expected output: src/utils/template.js with parseTemplate, resolveField (cascade: env var -> skogai.json -> template frontmatter -> hardcoded default), ACTIONS registry (copy, symlink); unit tests. No CLI wiring yet.",
+      "dependencies": [
+        "feat-013",
+        "feat-014"
+      ],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "feat-016",
+      "name": "templates/ mirror + .skogai/ content + wiring; retire harness-init",
+      "description": "Intent: ship the renamed template tree, the actual .skogai/ template files, and connect the engine into sync/init for the claude target only, replacing harness-init. Needed input: feat-015's engine. Expected output: git mv templates/codex templates/.codex, git mv templates/blocks templates/prompts; getAgentTemplateDir() (src/utils/copy.js) derives from AGENT_TARGETS[agent].outputDir (drops the claude special case); BLOCKS_DIR references updated in src/commands/sync.js; new templates/.skogai/{feature_list.json,progress.md,session-handoff.md,init.sh,QUESTIONS.list} with frontmatter, content ported from templates/.claude/skills/harness-creator/templates/* (left untouched there); resolveManifest() adds state: skills.includes('harness-creator'); runSync() calls deployTemplates() gated on plan.state + claude target; src/commands/harness-init.js deleted, its bin/cli.js registration and src/index.js export removed; new standalone `harness template deploy [dir]` CLI command.",
+      "dependencies": [
+        "feat-015"
+      ],
+      "status": "pending",
+      "evidence": null
+    },
+    {
+      "id": "feat-017",
+      "name": "Status drift detection + docs/test close-out for .skogai/",
+      "description": "Intent: make .skogai/ state visible to harness status, and land the trailing docs/tests so the feature set is actually done, not just implemented. Needed input: feat-016's shipped state plane. Expected output: src/commands/status.js reports missing/drifted .skogai/ templates (mirrors existing missingSkills reporting); docs/features.md, docs/harness-blueprint.md, docs/specs.md updated; test/state-scaffold.test.js (or extended test/manifest-sync.test.js) covers create-if-missing, no-clobber-on-rerun, minimal profile creates no .skogai/, and status drift reporting.",
+      "dependencies": [
+        "feat-013",
+        "feat-014",
+        "feat-015",
+        "feat-016"
+      ],
+      "status": "pending",
+      "evidence": null
     }
   ]
 }
