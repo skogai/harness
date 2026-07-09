@@ -5,11 +5,11 @@
   "$defs": {
     "type": {
       "type": "string",
-      "enum": ["router", "document", "skill"]
+      "enum": ["router", "workflow", "reference", "template", "script", "lesson", "pattern", "principle", "decision", "list"]
     },
     "variant": {
       "type": "string",
-      "enum": ["knowledge"]
+      "enum": ["skill", "agents", "claude", "simple-skill", "nested-router", "standalone", "knowledge"]
     },
     "status": {
       "type": "string",
@@ -56,15 +56,7 @@
       "properties": {
         "kind": {
           "type": "string",
-          "enum": [
-            "wiki",
-            "path",
-            "heading",
-            "url",
-            "asset",
-            "anchor",
-            "origin"
-          ]
+          "enum": ["wiki", "path", "heading", "url", "asset", "anchor", "origin"]
         },
         "target": {
           "type": "string",
@@ -78,14 +70,7 @@
     },
     "entryStatus": {
       "type": "string",
-      "enum": [
-        "open",
-        "done",
-        "complete",
-        "in-progress",
-        "delegated",
-        "cancelled"
-      ]
+      "enum": ["open", "done", "complete", "in-progress", "delegated", "cancelled"]
     },
     "decisionStatus": {
       "type": "string",

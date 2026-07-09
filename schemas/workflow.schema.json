@@ -1,13 +1,11 @@
 {
-  "$id": "https://skogai.se/schemas/router.schema.json",
+  "$id": "https://skogai.se/schemas/workflow.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Structured choice point",
-  "description": "A decision hub: presents at least two named branches, each with a condition and a destination. Not a table of contents — every branch is a choice with consequences. The `objective` section states what is being decided. The `routing` section enumerates branches: condition → destination.",
   "allOf": [
     { "$ref": "document.schema.json" },
     {
       "properties": {
-        "type": { "const": "router" },
+        "type": { "const": "workflow" },
         "sections": {
           "type": "array",
           "allOf": [
@@ -15,7 +13,7 @@
               "contains": {
                 "type": "object",
                 "properties": {
-                  "name": { "const": "description" }
+                  "name": { "const": "objective" }
                 },
                 "required": ["name"]
               }
@@ -24,7 +22,16 @@
               "contains": {
                 "type": "object",
                 "properties": {
-                  "name": { "const": "routing" }
+                  "name": { "const": "steps" }
+                },
+                "required": ["name"]
+              }
+            },
+            {
+              "contains": {
+                "type": "object",
+                "properties": {
+                  "name": { "const": "validation" }
                 },
                 "required": ["name"]
               }
