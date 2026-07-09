@@ -50,19 +50,47 @@ the question it keeps asking is:
 
 **what is the harness here, exactly?**
 
+## the documentation set
+
+this file is the front door. the rest lives in [harness/](harness/):
+
+<routes>
+
+- @harness/principles.md - why the harness matters more than the prompt, with the claude code lesson behind each principle
+- @harness/pattern-language.md - the ten building blocks, indexed by plane, linked to deep dives and gotchas
+- @harness/blueprint-template.md - the template for producing a formal harness design
+- @harness/gotchas.md - fifteen non-obvious failure modes that will cause bugs if violated
+
+</routes>
+
+deep-dive patterns (referenced from the pattern language):
+
+<routes>
+
+- @harness/context-engineering-pattern.md - select, write, compress, isolate; context as a budget
+- @harness/memory-persistence-pattern.md - layered memory, two-step saves, index caps, priority ordering
+- @harness/tool-registry-pattern.md - fail-closed registries, per-call concurrency, permission pipelines
+- @harness/multi-agent-pattern.md - coordinator, fork, swarm; synthesize instead of delegating understanding
+- @harness/lifecycle-bootstrap-pattern.md - hooks, trust boundaries, background tasks, staged bootstrap
+- @harness/skill-runtime-pattern.md - packaging reusable behavior with progressive disclosure
+
+</routes>
+
 ## skogai-harness is a blueprint generation framework
 
-harness blueprints for an agentic systems needs to essentially be generated dynamically. it should push to specify the runtime planes that are usually hand-waved away.
+harness blueprints for agentic systems need to be generated dynamically.
+the framework should push to specify the runtime planes that are usually
+hand-waved away.
 
-| plane            | what you should define                                                            |
-| ---------------- | --------------------------------------------------------------------------------- |
-| request assembly | instruction sources, system/user context, tool exposure, transcript normalization |
-| turn loop        | gather, decide, act, verify, stop/retry/escalate                                  |
-| tool plane       | capability contracts, permission gates, success criteria, rollback story          |
-| memory plane     | active context, retrieval, durable memory, compaction                             |
-| recovery plane   | transcript, resumability, partial work, continuity                                |
-| human control    | approvals, visibility, interruption, auditability                                 |
-| extension plane  | plugins, mcp, subagents, future expansion points                                  |
+| plane            | what you should define                                                             | patterns | deep dive |
+| ---------------- | ---------------------------------------------------------------------------------- | -------- | --------- |
+| request assembly | instruction sources, system/user context, tool exposure, transcript normalization | request assembler | [context-engineering](harness/context-engineering-pattern.md) |
+| turn loop        | gather, decide, act, verify, stop/retry/escalate                                   | turn loop | — |
+| tool plane       | capability contracts, permission gates, success criteria, rollback story           | capability plane, permission gate | [tool-registry](harness/tool-registry-pattern.md) |
+| memory plane     | active context, retrieval, durable memory, compaction                              | context governor | [context-engineering](harness/context-engineering-pattern.md), [memory-persistence](harness/memory-persistence-pattern.md) |
+| recovery plane   | transcript, resumability, partial work, continuity                                 | transcript spine, recovery plane | [lifecycle-bootstrap](harness/lifecycle-bootstrap-pattern.md) |
+| human control    | approvals, visibility, interruption, auditability                                  | human control surface | — |
+| extension plane  | plugins, mcp, subagents, future expansion points                                   | extension plane | [skill-runtime](harness/skill-runtime-pattern.md), [multi-agent](harness/multi-agent-pattern.md) |
 
 ## what is the blueprint for the blueprints?
 
@@ -74,10 +102,17 @@ the harness should be able to answer questions like:
 - where should permissions and approvals live?
 - how would this system recover from interruption or partial failure?
 
+the [blueprint template](harness/blueprint-template.md) turns those
+questions into a fill-in design document, one section per plane.
+
 ## skogix
 
 we assume that the end result will have the skogai-pi implementation of the basics.
 
-while we work our way backwards to meet that goal we will focus on `claude code cli` as the base case since it matches skogix/the users knowledge best.
+while we work our way backwards to meet that goal we will focus on
+`claude code cli` as the base case since it matches skogix/the users
+knowledge best. the [principles](harness/principles.md) doc records what
+each claude code behavior generalizes to.
 
-`codex cli` will work as our "beta tester" when it comes to converting harness specific functionality
+`codex cli` will work as our "beta tester" when it comes to converting
+harness specific functionality

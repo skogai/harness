@@ -1,6 +1,15 @@
+---
+type: user
+permalink: harness/skogix/harness/blueprint-template
+---
+
 # Harness Blueprint Template
 
-Use this template when the user wants a formal harness design.
+Use this template when the user wants a formal harness design. Each
+section maps to a runtime plane from
+[what-is-a-harness](../what-is-a-harness.md); the
+[pattern language](pattern-language.md) supplies the building blocks and
+[gotchas](gotchas.md) the failure modes to design against.
 
 ## 1. Goal and delegation boundary
 
