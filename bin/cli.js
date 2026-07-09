@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 
 import { program } from 'commander';
-import { init } from '../src/commands/init.js';
-import { harnessInit } from '../src/commands/harness-init.js';
-import { sync } from '../src/commands/sync.js';
-import { status } from '../src/commands/status.js';
-import { addMcp, addSkill } from '../src/commands/add.js';
+import { init } from '../src-js/commands/init.js';
+import { harnessInit } from '../src-js/commands/harness-init.js';
+import { sync } from '../src-js/commands/sync.js';
+import { status } from '../src-js/commands/status.js';
+import { addMcp, addSkill } from '../src-js/commands/add.js';
 import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';

@@ -3,14 +3,14 @@
   "version": "4.0.0",
   "description": "Declarative agent config for Claude Code and Codex: a skogai.json manifest for skills, MCP servers, and stack profiles, synced to each agent's native config, plus hand-maintained skills.",
   "type": "module",
-  "main": "src/index.js",
+  "main": "src-js/index.js",
   "bin": {
     "skogharness": "bin/cli.js",
     "harness": "bin/cli.js"
   },
   "files": [
     "bin/",
-    "src/",
+    "src-js/",
     "templates/",
     "README.md",
     "LICENSE"
@@ -19,7 +19,6 @@
     "install:global": "./scripts/install-global.sh",
     "test": "node --test",
     "test:security": "node --test test/*.test.js",
-    "lint": "eslint src/ test/ bin/ templates/.claude/utils/",
     "prepublishOnly": "bun run lint && bun test"
   },
   "keywords": [
