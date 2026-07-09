@@ -45,22 +45,34 @@ def parse_frontmatter(text):
         return yaml.safe_load(m.group(1))
     except yaml.YAMLError as e:
         print(f"FAIL  {FILE.name}")
-        print(f"      invalid frontmatter YAML: {e.problem or e}")
+        print(f"      invalid frontmatter YAML: {getattr(e, 'problem', None) or e}")
         sys.exit(1)
 
 def extract_xml_sections(text):
-    """Return list of xml section names present in the document body."""
-    return re.findall(r"<([a-z][a-z0-9_]*)[\s>]", text)
+    """Return list of xml section names present in the document body.
+    Requires a matching closing tag, so prose/code like `<name>.js` isn't
+    misread as a section."""
+    names = []
+    seen = set()
+    for m in re.finditer(r"<([a-z][a-z0-9_]*)(?:\s[^>]*)?>", text):
+        name = m.group(1)
+        if name in seen:
+            continue
+        if re.search(rf"</{re.escape(name)}>", text[m.end():]):
+            names.append(name)
+            seen.add(name)
+    return names
 
 # Markdown-heading section names are surface format, not semantic type — a
-# router's <objective> and a router's '## Purpose' heading name the same
+# router's <description> and a router's '## Purpose' heading name the same
 # thing. Aliases fold known synonyms onto the canonical XML-tag vocabulary
-# so schemas can validate by name regardless of which format authored it.
+# (matching router.schema.json's required section names) so schemas can
+# validate by name regardless of which format authored it.
 HEADING_SECTION_ALIASES = {
-    "purpose": "objective",
-    "objective": "objective",
-    "routes": "routing",
-    "routing": "routing",
+    "purpose": "description",
+    "description": "description",
+    "routes": "routes",
+    "routing": "routes",
 }
 
 def slugify_heading(title):

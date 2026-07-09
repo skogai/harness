@@ -33,7 +33,9 @@ def extract_xml_tags(text):
 
 
 def extract_xml_sections(text):
-    """Root-level XML sections as {kind, name, content}, one per unique tag name."""
+    """Root-level XML sections as {kind, name, content}, one per unique tag name.
+    Requires a matching closing tag, so prose/code like `<name>.js` isn't
+    misread as a section."""
     sections = []
     seen = set()
     for m in re.finditer(r"<([a-z][a-z0-9_]*)(?:\s[^>]*)?>", text):
@@ -41,7 +43,9 @@ def extract_xml_sections(text):
         if name in seen:
             continue
         close = re.search(rf"</{re.escape(name)}>", text[m.end():])
-        content = text[m.end():m.end() + close.start()].strip() if close else ""
+        if not close:
+            continue
+        content = text[m.end():m.end() + close.start()].strip()
         sections.append({"kind": "xml", "name": name, "content": content})
         seen.add(name)
     return sections
