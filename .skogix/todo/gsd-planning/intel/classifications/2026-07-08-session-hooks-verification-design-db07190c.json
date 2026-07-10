@@ -1,0 +1,26 @@
+{
+  "source_path": "/home/skogix/.local/share/opencode/worktree/3244143f8f169c874a74e2deadf1dcfb1d207d3d/quick-circuit/docs/superpowers/specs/2026-07-08-session-hooks-verification-design.md",
+  "type": "SPEC",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "Session Hooks Verification Design",
+  "summary": "Technical design for harness session-start briefs, stop-time verification, structured evidence, hook integration, and rollout testing.",
+  "scope": [
+    "skogharness",
+    "harness brief",
+    "harness verify",
+    "SessionStart hook",
+    "Stop hook",
+    "feature_list.json",
+    "verification.commands",
+    "progress.md",
+    "session-handoff.md",
+    "skoghooks",
+    "skogai-jq",
+    "skogai-tests"
+  ],
+  "cross_refs": [],
+  "locked": false,
+  "precedence": null,
+  "notes": ""
+}

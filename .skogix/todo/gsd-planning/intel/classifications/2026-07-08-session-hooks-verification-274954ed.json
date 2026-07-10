@@ -1,0 +1,43 @@
+{
+  "source_path": "/home/skogix/.local/share/opencode/worktree/3244143f8f169c874a74e2deadf1dcfb1d207d3d/quick-circuit/docs/superpowers/plans/2026-07-08-session-hooks-verification.md",
+  "type": "SPEC",
+  "confidence": "high",
+  "manifest_override": false,
+  "title": "Session Hooks Verification Implementation Plan",
+  "summary": "Technical implementation plan for harness startup briefs, stop-time verification, opt-in hook wrappers, structured evidence, tests, and documentation updates.",
+  "scope": [
+    "skogharness",
+    "lifecycle helpers",
+    "harness brief",
+    "harness verify",
+    "Claude hooks",
+    "structured verification evidence",
+    "feature list schema",
+    "tests",
+    "documentation"
+  ],
+  "cross_refs": [
+    "src/lifecycle/state.js",
+    "src/lifecycle/brief.js",
+    "src/lifecycle/verify.js",
+    "src/commands/brief.js",
+    "src/commands/verify.js",
+    "bin/cli.js",
+    "src/index.js",
+    "templates/.claude/hooks/harness-session-start.sh",
+    "templates/.claude/hooks/harness-stop-verify.sh",
+    "templates/.claude/hooks/README.md",
+    "test/lifecycle-brief.test.js",
+    "test/lifecycle-verify.test.js",
+    "templates/.claude/skills/harness-creator/templates/feature-list.schema.json",
+    "test/skill-quality.test.js",
+    "README.md",
+    "docs/features.md",
+    "feature_list.json",
+    "progress.md",
+    "session-handoff.md"
+  ],
+  "locked": false,
+  "precedence": null,
+  "notes": ""
+}
