@@ -126,8 +126,8 @@ script, just cli flags plus an explicit, empty settings file:
 [`.claude/settings.bare.json`](../.claude/settings.bare.json).
 
 ```sh
-ANTHROPIC_API_KEY=<key> claude \
-  --bare \
+claude \
+  --safe-mode \
   --system-prompt "" \
   --tools "" \
   --setting-sources "" \
@@ -137,12 +137,15 @@ ANTHROPIC_API_KEY=<key> claude \
   -p "<prompt>"
 ```
 
-`--bare` skips hooks, lsp, plugin sync, attribution, auto-memory,
-prefetches, keychain reads, and CLAUDE.md auto-discovery (it also
-requires `ANTHROPIC_API_KEY` since oauth/keychain auth is disabled).
-`--system-prompt ""`, `--tools ""`, `--setting-sources ""`,
-`--strict-mcp-config`, and `--disable-slash-commands` zero out the
-system prompt, tools, settings, mcp, and skills respectively.
+`--safe-mode` disables all customizations (CLAUDE.md, skills, plugins,
+hooks, mcp servers, custom commands/agents, output styles, themes,
+keybindings) while leaving auth, model selection, built-in tools, and
+permissions working normally — unlike `--bare`, which forces
+`ANTHROPIC_API_KEY`/`apiKeyHelper` auth and never reads oauth or the
+keychain, breaking normal subscription login. `--system-prompt ""`,
+`--tools ""`, `--setting-sources ""`, `--strict-mcp-config`, and
+`--disable-slash-commands` zero out the system prompt, tools, settings,
+mcp, and skills respectively.
 `.claude/settings.bare.json` is `{}` on purpose: the emptiness is the
 pinned proof that zero settings are required, not a load-bearing
 config.
