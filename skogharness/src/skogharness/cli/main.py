@@ -8,11 +8,19 @@ import click
 from .install_skill import install_skills
 
 
+def _find_repo_root(start: Path) -> Path:
+    """Walk up from `start` looking for a `.git` directory; fall back to `start`."""
+    for candidate in (start, *start.parents):
+        if (candidate / ".git").exists():
+            return candidate
+    return start
+
+
 def _default_skills_target() -> Path:
     project_dir = os.environ.get("CLAUDE_PROJECT_DIR")
     if project_dir:
         return Path(project_dir) / ".claude" / "skills"
-    return Path.cwd() / ".claude" / "skills"
+    return _find_repo_root(Path.cwd()) / ".claude" / "skills"
 
 
 @click.group()
@@ -41,7 +49,10 @@ def install():
 def install_skills_command(target: Path, dry_run: bool):
     """Copy every skill under src/skogharness/skills/ into the target directory."""
     target = target or _default_skills_target()
-    results = install_skills(target, dry_run=dry_run)
+    try:
+        results = install_skills(target, dry_run=dry_run)
+    except ValueError as e:
+        raise click.ClickException(str(e))
 
     if not results:
         click.echo("No skills found to install.")

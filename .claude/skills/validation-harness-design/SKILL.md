@@ -9,7 +9,7 @@ description: Use when designing repository validation commands, doctor scripts, 
 
 Define the smallest repeatable command surface that proves repository changes are safe enough for review.
 
-This skill turns scattered checks into commands agents can run, CI can reuse, and failures can diagnose. For shared harness terms, see `../../references/harness-patterns.md`; when validation commands are absent, use `references/build-when-missing.md`. For setup probes and CI-safe fallbacks, see `references/environment-bootstrap.md`.
+This skill turns scattered checks into commands agents can run, CI can reuse, and failures can diagnose. When validation commands are absent, use `references/build-when-missing.md`. For setup probes and CI-safe fallbacks, see `references/environment-bootstrap.md`.
 
 ## When To Use
 

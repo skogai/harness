@@ -35,7 +35,7 @@ run = "python3 -m unittest discover -p 'test_*.py'"
 [tasks."test:skogharness"]
 description = "Run the skogharness Python package test suite"
 dir = "skogharness"
-run = "uv run pytest"
+run = "uv run --extra dev pytest"
 
 [tasks.check]
 description = "Run all test suites"

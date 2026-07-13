@@ -7,6 +7,7 @@ managed-block tracking.
 """
 
 import shutil
+import uuid
 from pathlib import Path
 from typing import List, NamedTuple
 
@@ -36,18 +37,31 @@ def list_available_skills() -> List[str]:
 def resolve_target(target: Path) -> Path:
     """Resolve and validate a target skills directory.
 
-    Refuses targets that resolve above the current working directory's
-    parent, as a basic guard against writing outside the intended tree.
+    Refuses the filesystem root, and refuses any target that overlaps the
+    packaged skill source tree (as itself, an ancestor, or a descendant) so
+    an install can never delete or corrupt the canonical source it copies
+    from.
     """
     resolved = target.expanduser().resolve()
     cwd_root = Path.cwd().resolve().anchor
     if str(resolved) == cwd_root or resolved == Path(cwd_root):
         raise ValueError(f"Refusing to install into filesystem root: {resolved}")
+
+    source = get_skills_source().resolve()
+    if resolved == source or source in resolved.parents or resolved in source.parents:
+        raise ValueError(
+            f"Refusing to install into the packaged skill source tree: {resolved}"
+        )
     return resolved
 
 
 def install_skills(target: Path, dry_run: bool = False) -> List[InstallResult]:
-    """Install every available skill into target, overwriting existing copies."""
+    """Install every available skill into target, overwriting existing copies.
+
+    Each skill is copied into a temporary sibling directory first; the live
+    directory is only replaced once that copy succeeds, so a failed copy
+    never leaves a skill partially written or missing.
+    """
     source = get_skills_source()
     target = resolve_target(target)
     results: List[InstallResult] = []
@@ -63,14 +77,17 @@ def install_skills(target: Path, dry_run: bool = False) -> List[InstallResult]:
             continue
 
         target.mkdir(parents=True, exist_ok=True)
+        staging_target = target / f".{skill_name}.staging-{uuid.uuid4().hex}"
+        try:
+            shutil.copytree(skill_source, staging_target)
+        except OSError as e:
+            shutil.rmtree(staging_target, ignore_errors=True)
+            results.append(InstallResult(skill_name, False, f"Failed: {e}"))
+            continue
+
         if skill_target.exists():
             shutil.rmtree(skill_target)
-        try:
-            shutil.copytree(skill_source, skill_target)
-            results.append(
-                InstallResult(skill_name, True, f"Installed to {skill_target}")
-            )
-        except OSError as e:
-            results.append(InstallResult(skill_name, False, f"Failed: {e}"))
+        staging_target.rename(skill_target)
+        results.append(InstallResult(skill_name, True, f"Installed to {skill_target}"))
 
     return results

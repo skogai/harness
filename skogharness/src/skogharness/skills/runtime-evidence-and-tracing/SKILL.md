@@ -9,7 +9,7 @@ description: Use when connecting observed behavior, logs, metrics, request IDs, 
 
 Make runtime validation auditable by tying observed behavior to runtime evidence through stable IDs and artifacts.
 
-Agents should not only say they tested something; they should leave run IDs, request IDs, logs, screenshots, interaction records, or traces. For shared harness terms, see `../../references/harness-patterns.md`; when evidence surfaces are absent, use `references/build-when-missing.md`. For neutral runtime profiles and redaction policy, see `references/runtime-profile-policy.md`.
+Agents should not only say they tested something; they should leave run IDs, request IDs, logs, screenshots, interaction records, or traces. When evidence surfaces are absent, use `references/build-when-missing.md`. For neutral runtime profiles and redaction policy, see `references/runtime-profile-policy.md`.
 
 ## When To Use
 

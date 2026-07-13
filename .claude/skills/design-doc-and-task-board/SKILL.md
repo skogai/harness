@@ -9,7 +9,7 @@ description: Use when deciding how requirements should be captured in design doc
 
 Decide where intent, design, work state, and acceptance criteria should live so they do not drift.
 
-Design docs explain why and how; a work-state surface tracks current tasks, statuses, acceptance criteria, and task-to-change traceability; exec plans describe how to execute a complex batch of changes. `tasks.md` or `docs/tasks.md` is the lightweight repo-local default when no reliable Jira, Linear, GitHub Issues, internal board, or equivalent tracker exists. For shared harness terms, see `../../references/harness-patterns.md`; when planning files are absent, use `references/build-when-missing.md`.
+Design docs explain why and how; a work-state surface tracks current tasks, statuses, acceptance criteria, and task-to-change traceability; exec plans describe how to execute a complex batch of changes. `tasks.md` or `docs/tasks.md` is the lightweight repo-local default when no reliable Jira, Linear, GitHub Issues, internal board, or equivalent tracker exists. When planning files are absent, use `references/build-when-missing.md`.
 
 ## When To Use
 
