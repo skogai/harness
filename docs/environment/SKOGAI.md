@@ -51,24 +51,26 @@ actually been run for that specific directory — new worktrees
 doesn't apply there. But that's not actually where the observed values come
 from in practice:
 
-`skogcli config list` is the source of truth for the current skogcli
-environment. It shows a flat dotted store with per-agent `env.*` blocks
-(`skogai.env.*`, `claude.env.*`, `ansible.env.*`, ...), and
-`.skogai/scripts/env.sh` wraps `skogcli config get "$1.env.$2" --raw` to read
-one var for one agent. `skogcli config list` on this machine shows:
+The normal way still works fine: export `SKOGAI_CONFIG_DIR`/`SKOGAI_CONFIG`
+directly, or let `.envrc` do it once direnv has actually been allowed for
+that directory. `.skogai/scripts/env.sh` (wrapping `skogcli config get
+"$1.env.$2" --raw`) isn't a replacement for that — it's a convenience helper
+for scripted one-off lookups of a single `namespace.env.VAR` pair, nothing
+more.
 
-- `skogai.env.SKOGAI_CONFIG = "/home/skogix/skogai/config"` — this is
-  exactly the value seen in the `remote-control` environment. Confirms that
-  environment reads through the `skogai` namespace, not `.envrc`.
+`skogcli config list` is still the fastest way to see the full current
+skogcli environment in one shot: a flat dotted store with per-agent `env.*`
+blocks (`skogai.env.*`, `claude.env.*`, `ansible.env.*`, ...). On this
+machine it shows:
+
+- `skogai.env.SKOGAI_CONFIG = "/home/skogix/skogai/config"` — exactly the
+  value seen in the `remote-control` environment.
 - `claude.env.SKOGAI_CONFIG = "./skogai/config"` — a *different*, agent-scoped
   override for `claude` specifically, sitting unused unless something
   resolves `claude.env.*` before falling back to `skogai.env.*`.
 
 `skogcli script list` shows which scripts (global vs user, `env`,
-`claude-code-init`, the `worktree-pre/post-*` hooks, etc.) are available to
-run this resolution — together, `skogcli config list` + `skogcli script list`
-is how to read "what is the current skogcli environment" from inside any
-session, more reliably than checking `.envrc`/direnv state.
+`claude-code-init`, the `worktree-pre/post-*` hooks, etc.) are available.
 
 **Planned direction:** have `skogcli` set `SKOGAI_*` (and per-agent `env.*`)
 based on detected environment/mode directly, rather than depending on
@@ -114,6 +116,14 @@ least sharing:
    isolated config seeded fresh on first use — useful when one project
    needs more than one independent config (e.g. one for the repo at large,
    another scoped to a specific tool/subsystem).
+
+This is the mechanism that matters beyond this repo: `harness` isn't only
+setting up its own environment, it's a harness for setting up environments
+in *other* repos/projects too. Bootstrapping a fresh `SKOGAI_CONFIG_DIR`
+inside some other project (strategy 3, pointed at that project instead of
+`.claude/skogai/config`) is how this harness would provision an isolated,
+seeded SkogAI config for a repo that has none yet, without touching the
+workstation-wide store or this repo's own `.skogai/config`.
 
 `skogcli config export-env --namespace ns1,ns2,...` merges the listed
 namespaces' `env.*` blocks left to right, with **later namespaces winning**
