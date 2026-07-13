@@ -43,3 +43,6 @@ run = "./scripts/check-skills.sh"
 [tasks."check:schema"]
 description = "Validate schemas"
 run = "./scripts/validate-schema.sh"
+
+[tasks.install-skogcli]
+run = "uv tool install git+https://github.com/skogai/cli"
