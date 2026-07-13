@@ -9,7 +9,7 @@ description: Use when splitting changes into atomic commits, preparing commits f
 
 Turn completed work into small, reviewable commits with scoped validation, related task-state updates, and no unrelated files.
 
-This skill is not a review template or ledger template. It focuses on minimal commits, exact staged paths, task-state coupling, validation, and commit messages. For shared harness terms, see `../../references/harness-patterns.md`; when commit rules are absent, use `references/build-when-missing.md`. For delivery artifact evidence, see `references/delivery-artifact-checklist.md`.
+This skill is not a review template or ledger template. It focuses on minimal commits, exact staged paths, task-state coupling, validation, and commit messages. When commit rules are absent, use `references/build-when-missing.md`. For delivery artifact evidence, see `references/delivery-artifact-checklist.md`.
 
 ## When To Use
 

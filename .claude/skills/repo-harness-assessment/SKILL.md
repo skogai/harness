@@ -9,7 +9,7 @@ description: Use when evaluating an existing repository's agent-readiness, harne
 
 Assess how well a repository lets an agent understand rules, make safe changes, verify them, and produce reviewable evidence.
 
-Use this skill to diagnose current harness maturity before proposing changes. For shared vocabulary and neutral artifact names, see `../../references/harness-patterns.md`; when expected harness files are missing, use `references/build-when-missing.md`.
+Use this skill to diagnose current harness maturity before proposing changes. When expected harness files are missing, use `references/build-when-missing.md`.
 
 ## When To Use
 
