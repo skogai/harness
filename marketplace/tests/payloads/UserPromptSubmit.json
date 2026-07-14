@@ -3,5 +3,5 @@
   "transcript_path": "/tmp/skoghooks-smoke/transcript.jsonl",
   "cwd": "/tmp/skoghooks-smoke",
   "hook_event_name": "UserPromptSubmit",
-  "prompt": "hello from the smoke test"
+  "prompt": "hello from the smoke test git testing lesson prompt!"
 }
