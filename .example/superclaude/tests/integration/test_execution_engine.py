@@ -15,11 +15,13 @@ class TestQuickExecute:
 
     def test_quick_execute_simple_ops(self):
         """Quick execute should run simple operations and return results"""
-        results = quick_execute([
-            lambda: "result_a",
-            lambda: "result_b",
-            lambda: 42,
-        ])
+        results = quick_execute(
+            [
+                lambda: "result_a",
+                lambda: "result_b",
+                lambda: 42,
+            ]
+        )
 
         assert results == ["result_a", "result_b", 42]
 
