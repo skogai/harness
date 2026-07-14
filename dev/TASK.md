@@ -12,11 +12,21 @@
 
 ## Not Started
 
-- [ ] Add tests around category structure.
-- [ ] Add installer support for non-skill categories.
+- [x] Add tests around category installer behavior.
+- [x] Add installer support for non-skill categories.
 - [ ] Add real hook scripts.
 - [ ] Add validation or doctor commands.
 
+## Phase 2: Automated Basic Installer
+
+- [x] Open Phase 2 scope in `dev/PLANNING.md`.
+- [x] Add RED tests for generic category installation.
+- [x] Preserve `skogharness install skills` behavior.
+- [x] Add `skogharness install agents|commands|hooks|mcp|modes`.
+- [x] Document `mise run test:skogharness` as the installer verification path.
+- [x] Run final full `mise run test:skogharness` verification.
+- [x] Exercise real CLI dry-run and install scenarios.
+
 ## Resume Notes
 
-Continue with the basic Markdown examples only. Do not expand into runtime features until this structure is stable and tested.
+Continue with the automated basic installer only. Do not expand into runtime hooks, MCP setup, drift detection, doctor commands, or release workflow until this installer surface is stable and verified.

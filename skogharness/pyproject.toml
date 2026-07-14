@@ -28,5 +28,8 @@ skogharness = "skogharness.pytest_plugin"
 [tool.hatch.build.targets.wheel]
 packages = ["src/skogharness"]
 
+[tool.hatch.build.targets.wheel.force-include]
+"src/skogharness/py.typed" = "skogharness/py.typed"
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
