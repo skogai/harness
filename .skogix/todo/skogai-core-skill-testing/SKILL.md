@@ -28,14 +28,14 @@ When invoked:
 
 1. Identify the user's intent.
 2. Decide whether the task is routing, authoring, auditing, templating, or validation.
-3. Load one matching endpoint from `<routing>`.
+3. Load one matching endpoint from `<routes>`.
 4. Follow that endpoint and stop loading context once the task is clear.
 5. Create or update the smallest file that owns the needed behavior.
 
 Ask a question only when two routes would produce meaningfully different files.
 </quick_start>
 
-<routing>
+<routes>
 
 | intent                           | endpoint                                |
 | -------------------------------- | --------------------------------------- |
@@ -55,7 +55,7 @@ Ask a question only when two routes would produce meaningfully different files.
 | Choose XML tags                  | `references/xml-tags.md`                |
 | Use naming and ownership rules   | `references/naming-and-ownership.md`    |
 
-</routing>
+</routes>
 
 <routing_file_variants>
 

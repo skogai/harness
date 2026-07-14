@@ -16,13 +16,13 @@ type: template
 3. [Stop condition]
 </quick_start>
 
-<routing>
+<routes>
 
 | intent | endpoint |
 | --- | --- |
 | [Intent] | `[endpoint]` |
 
-</routing>
+</routes>
 
 <rules>
 

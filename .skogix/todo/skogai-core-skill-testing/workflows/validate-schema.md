@@ -18,7 +18,7 @@ Validate framework files against skogai JSON schemas and surface structural gaps
 
 5. If fixing frontmatter: add `type: <router|workflow|reference|template|script|lesson>` to the YAML block.
 
-6. If fixing a missing XML section: wrap the relevant content block in the required tag (e.g. `<objective>`, `<routing>`, `<steps>`, `<validation>`, `<overview>`, `<template>`).
+6. If fixing a missing XML section: wrap the relevant content block in the required tag (e.g. `<objective>`, `<routes>`, `<steps>`, `<validation>`, `<overview>`, `<template>`).
 
 7. Re-run the script after each fix to confirm the count moves from FAIL/WARN to PASS.
 

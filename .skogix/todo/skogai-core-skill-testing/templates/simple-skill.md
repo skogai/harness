@@ -16,13 +16,13 @@ type: template
 3. [Stop when the capability is complete]
 </quick_start>
 
-<routing>
+<routes>
 
 | intent | endpoint |
 | --- | --- |
 | [Intent] | `[endpoint or inline action]` |
 
-</routing>
+</routes>
 
 <success_criteria>
 

@@ -10,7 +10,7 @@ Use semantic XML tags to make agent-facing guidance easy to scan, parse, and val
 | --- | --- |
 | `<objective>` | What this file is for |
 | `<quick_start>` | Immediate operating steps |
-| `<routing>` | Intent-to-endpoint mapping |
+| `<routes>` | Intent-to-endpoint mapping |
 | `<mental_model>` | Core abstraction or model |
 | `<rules>` | Constraints that should usually hold |
 | `<workflow>` | Ordered procedure |

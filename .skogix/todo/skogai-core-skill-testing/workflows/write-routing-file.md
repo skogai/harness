@@ -23,7 +23,7 @@ Create or rewrite a routing file such as `SKILL.md`, `AGENTS.md`, `CLAUDE.md`, a
 - `<objective>`
 - `<mental_model>`
 - `<quick_start>`
-- `<routing>`
+- `<routes>`
 - `<rules>` or a domain-specific rules tag
 - `<success_criteria>`
 
