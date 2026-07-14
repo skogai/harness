@@ -21,12 +21,13 @@ const shell_command_projection_cjs_1 = require("./shell-command-projection.cjs")
 const runtime_slash_cjs_1 = require("./runtime-slash.cjs");
 const clock_cjs_1 = require("./clock.cjs");
 const state_transition_cjs_1 = require("./state-transition.cjs");
+const write_set_cjs_1 = require("./write-set.cjs");
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const ioMod = require("./io.cjs");
 const { output, error } = ioMod;
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const phaseIdMod = require("./phase-id.cjs");
-const { escapeRegex, normalizePhaseName, phaseTokenMatches } = phaseIdMod;
+const { escapeRegex, normalizePhaseName, phaseTokenMatches, PHASE_NUMBER_TOKEN_SOURCE } = phaseIdMod;
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const roadmapParserMod = require("./roadmap-parser.cjs");
 const { getMilestonePhaseFilter, extractCurrentMilestone, getMilestoneInfo } = roadmapParserMod;
@@ -59,50 +60,102 @@ function cmdRequirementsMarkComplete(cwd, reqIdsRaw, raw) {
     const updated = [];
     const alreadyComplete = [];
     const notFound = [];
+    // #2140: IDs reconciled on the checkbox surface only — a traceability table
+    // exists but has no row for the ID. Without this bucket the payload for a
+    // partial reconcile is byte-identical to a full one, and audit-milestone (which
+    // reads the table) still sees Pending while the CLI reported success.
+    const tableUnmatched = [];
+    // A traceability table is present if the file has a "| Requirement | … |"
+    // header. A REQUIREMENTS.md with no such table is legitimate (mid-roadmap), so
+    // a missing row only counts as drift when a table actually exists.
+    const hasTable = /^\|\s*Requirement\s*\|/im.test(reqContent);
+    // ADR-2143 §6 per-surface write-set, tracked PER requirement ID: a
+    // multi-ID batch must not OR one ID's surface outcome into another's —
+    // that is the exact #2140 class one level up (an ID whose traceability
+    // row is absent/unmatched must not have its partial write masked by a
+    // different ID in the same invocation that fully reconciled). Reported
+    // additively as `write_set` below — it does not change the existing
+    // marked_complete/already_complete/not_found/table_unmatched/updated
+    // computation, which stays byte-for-behaviour identical (#2140's tactical
+    // fix already surfaces the checkbox-only-partial-write case via
+    // table_unmatched; this only adds the structured ADR-2143 shape on top).
+    const writeSet = [];
     for (const reqId of reqIds) {
-        let found = false;
         const reqEscaped = escapeRegex(reqId);
-        // Update checkbox: - [ ] **REQ-ID** → - [x] **REQ-ID**
-        // Use replace() directly and compare — avoids test()+replace() global regex
+        // Surface 1 — the checkbox: - [ ] **REQ-ID** → - [x] **REQ-ID**
+        // Use replace() + compare to avoid the test()+replace() global regex
         // lastIndex bug where test() advances state and replace() misses matches.
         const checkboxPattern = new RegExp(`(-\\s*\\[)[ ](\\]\\s*\\*\\*${reqEscaped}\\*\\*)`, 'gi');
         const afterCheckbox = reqContent.replace(checkboxPattern, '$1x$2');
-        if (afterCheckbox !== reqContent) {
+        const checkboxHit = afterCheckbox !== reqContent;
+        if (checkboxHit)
             reqContent = afterCheckbox;
-            found = true;
-        }
-        // Update traceability table: | REQ-ID | Phase N | Pending | → | REQ-ID | Phase N | Complete |
+        // Surface 2 — the traceability row: | REQ-ID | Phase N | Pending | → ... Complete |
         const tablePattern = new RegExp(`(\\|\\s*${reqEscaped}\\s*\\|[^|]+\\|)\\s*Pending\\s*(\\|)`, 'gi');
         const afterTable = reqContent.replace(tablePattern, '$1 Complete $2');
-        if (afterTable !== reqContent) {
+        const tableHit = afterTable !== reqContent;
+        if (tableHit)
             reqContent = afterTable;
-            found = true;
+        // ADR-2143 §6 per-ID write-set entries: this ID's checkbox surface is
+        // always tracked; the traceability surface is tracked only when the file
+        // has a traceability table at all (same `hasTable` gate the existing
+        // required-surface logic below uses) — omitted entirely, not a false
+        // `applied:false`, when no table is required of this file.
+        writeSet.push({ requirement: reqId, surface: 'checkbox', applied: checkboxHit });
+        if (hasTable) {
+            writeSet.push({ requirement: reqId, surface: 'traceability', applied: tableHit });
         }
-        if (found) {
+        // Coverage of the traceability surface for this ID (computed after any flip).
+        // hasRow keys on the ID + a second cell (`| ID | <phase> |`) so a bare mention
+        // of the ID in a non-traceability table does not masquerade as a real row.
+        const hasRow = new RegExp(`\\|\\s*${reqEscaped}\\s*\\|[^|]+\\|`, 'i').test(reqContent);
+        const doneCheckbox = new RegExp(`-\\s*\\[x\\]\\s*\\*\\*${reqEscaped}\\*\\*`, 'i').test(reqContent);
+        const doneTable = new RegExp(`\\|\\s*${reqEscaped}\\s*\\|[^|]+\\|\\s*Complete\\s*\\|`, 'i').test(reqContent);
+        if (checkboxHit || tableHit) {
             updated.push(reqId);
         }
-        else {
-            // Check if already complete before declaring not_found.
-            // Non-global flag is fine here — we only need to know if a match exists.
-            const doneCheckbox = new RegExp(`-\\s*\\[x\\]\\s*\\*\\*${reqEscaped}\\*\\*`, 'i');
-            const doneTable = new RegExp(`\\|\\s*${reqEscaped}\\s*\\|[^|]+\\|\\s*Complete\\s*\\|`, 'i');
-            if (doneCheckbox.test(reqContent) || doneTable.test(reqContent)) {
-                alreadyComplete.push(reqId);
-            }
-            else {
-                notFound.push(reqId);
-            }
+        else if (doneTable || (doneCheckbox && !hasTable)) {
+            // Fully reconciled: the table row is Complete, OR the checkbox is done and
+            // there is no table to reconcile against. (A [x] checkbox with a Pending or
+            // absent row is NOT fully reconciled when a table exists — #2140.)
+            alreadyComplete.push(reqId);
+        }
+        else if (!doneCheckbox && !doneTable) {
+            notFound.push(reqId);
+        }
+        // else: doneCheckbox && hasTable && !doneTable — partially reconciled. It is
+        // neither updated, already_complete, nor not_found; the table_unmatched bucket
+        // below carries the truthful partial-reconcile signal.
+        // Surface traceability drift: checkbox reconciled (this run or before) but the
+        // table has no row for this ID. This is what makes a partial reconcile
+        // distinguishable from a full one (#2140).
+        if (hasTable && doneCheckbox && !hasRow) {
+            tableUnmatched.push(reqId);
         }
     }
     if (updated.length > 0) {
         (0, shell_command_projection_cjs_1.platformWriteSync)(reqPath, reqContent);
     }
+    // ADR-2143 §6: `writeSet` above already carries one WriteOutcome per
+    // (requirement, surface) this invocation could have written to — per ID,
+    // not ORed across the batch. `write_set` and `write_set_complete` are
+    // additive: they do not replace or gate `updated` / `marked_complete` /
+    // `already_complete` / `not_found` / `table_unmatched`, which remain
+    // computed exactly as before (see #2140 note above — that fix already
+    // surfaces a checkbox-only partial write via `table_unmatched`;
+    // `write_set_complete` is a structured, ADR-2143-shaped read of the SAME
+    // per-surface, per-ID facts, `false` if ANY id's ANY required surface did
+    // not apply, since `writeSetComplete` requires EVERY entry to have
+    // applied, never an OR across surfaces OR across IDs).
     output({
         updated: updated.length > 0,
         marked_complete: updated,
         already_complete: alreadyComplete,
         not_found: notFound,
+        table_unmatched: tableUnmatched,
         total: reqIds.length,
+        write_set: writeSet,
+        write_set_complete: (0, write_set_cjs_1.writeSetComplete)(writeSet),
     }, raw, `${updated.length}/${reqIds.length} requirements marked complete`);
 }
 function cmdMilestoneComplete(cwd, version, options, raw) {
@@ -120,10 +173,12 @@ function cmdMilestoneComplete(cwd, version, options, raw) {
     const milestonesPath = node_path_1.default.join(planningBase, 'MILESTONES.md');
     const archiveDir = node_path_1.default.join(planningBase, 'milestones');
     const phasesDir = planningPaths(cwd).phases;
-    const today = new Date().toISOString().split('T')[0];
+    const today = clock_cjs_1.realClock.localToday();
     const milestoneName = options.name || version;
-    // Ensure archive directory exists
-    (0, shell_command_projection_cjs_1.platformEnsureDir)(archiveDir);
+    // Ensure archive directory exists (skipped in dry-run — no mutations)
+    if (!options.dryRun) {
+        (0, shell_command_projection_cjs_1.platformEnsureDir)(archiveDir);
+    }
     // Scope stats and accomplishments to only the phases belonging to the
     // current milestone's ROADMAP.  Uses the shared filter from roadmap-parser.cjs
     // (same logic used by cmdPhasesList and other callers).
@@ -156,8 +211,8 @@ function cmdMilestoneComplete(cwd, version, options, raw) {
             if (stateVersion && stateVersion === version) {
                 const roadmapContent = node_fs_1.default.readFileSync(roadmapPath, 'utf-8');
                 const scopedContent = extractCurrentMilestone(roadmapContent, cwd);
-                // #1729: `(?:\s*\([^)\n]*\))?` tolerates a pre-colon ( ) tag (literal mirror of OPTIONAL_PHASE_TAG_SOURCE).
-                const phasePattern = /#{2,4}\s*Phase\s+(\d+[A-Z]?(?:\.\d+)*)(?:\s*\([^)\n]*\))?\s*:\s*([^\n]+)/gi;
+                // #1729: `(?:\s*\([^)\n]{0,200}\))?` tolerates a pre-colon ( ) tag (literal mirror of OPTIONAL_PHASE_TAG_SOURCE).
+                const phasePattern = new RegExp(`#{2,4}\\s*Phase\\s+(${PHASE_NUMBER_TOKEN_SOURCE})(?:\\s*\\([^)\\n]{0,200}\\))?\\s*:\\s*([^\\n]+)`, 'gi');
                 const noDirectoryPhases = [];
                 let pm;
                 const phaseDirEntries = (() => {
@@ -254,6 +309,47 @@ function cmdMilestoneComplete(cwd, version, options, raw) {
     }
     catch {
         /* intentionally empty */
+    }
+    // #2118: --dry-run preview — compute what WOULD happen without mutating.
+    // The stats above are read-only; all mutations start at the archive section below.
+    if (options.dryRun) {
+        const phaseDirsToArchive = [];
+        if (options.archivePhases !== false) {
+            try {
+                const entries = node_fs_1.default.readdirSync(phasesDir, { withFileTypes: true });
+                for (const e of entries) {
+                    if (e.isDirectory() && isDirInMilestone(e.name)) {
+                        phaseDirsToArchive.push(e.name);
+                    }
+                }
+            }
+            catch { /* phasesDir missing — nothing to archive */ }
+        }
+        const dryRunResult = {
+            dry_run: true,
+            version,
+            name: milestoneName,
+            stats: { phases: phaseCount, plans: totalPlans, tasks: totalTasks },
+            accomplishments,
+            would_archive: {
+                roadmap: node_fs_1.default.existsSync(roadmapPath)
+                    ? { source: node_path_1.default.relative(cwd, roadmapPath).split(node_path_1.default.sep).join('/'), target: node_path_1.default.relative(cwd, node_path_1.default.join(archiveDir, `${version}-ROADMAP.md`)).split(node_path_1.default.sep).join('/') }
+                    : null,
+                requirements: node_fs_1.default.existsSync(reqPath)
+                    ? { source: node_path_1.default.relative(cwd, reqPath).split(node_path_1.default.sep).join('/'), target: node_path_1.default.relative(cwd, node_path_1.default.join(archiveDir, `${version}-REQUIREMENTS.md`)).split(node_path_1.default.sep).join('/') }
+                    : null,
+                audit: node_fs_1.default.existsSync(node_path_1.default.join(planningBase, `${version}-MILESTONE-AUDIT.md`))
+                    ? { source: node_path_1.default.relative(cwd, node_path_1.default.join(planningBase, `${version}-MILESTONE-AUDIT.md`)).split(node_path_1.default.sep).join('/'), target: node_path_1.default.relative(cwd, node_path_1.default.join(archiveDir, `${version}-MILESTONE-AUDIT.md`)).split(node_path_1.default.sep).join('/') }
+                    : null,
+                phases: phaseDirsToArchive,
+            },
+            would_update: {
+                milestones_md: node_path_1.default.relative(cwd, milestonesPath).split(node_path_1.default.sep).join('/'),
+                state_md: node_fs_1.default.existsSync(statePath) ? node_path_1.default.relative(cwd, statePath).split(node_path_1.default.sep).join('/') : null,
+            },
+        };
+        output(dryRunResult, raw);
+        return;
     }
     // Archive ROADMAP.md
     if (node_fs_1.default.existsSync(roadmapPath)) {

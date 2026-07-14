@@ -209,6 +209,7 @@ function buildNewProjectConfig(userChoices) {
             ui_phase: true,
             ui_safety_gate: true,
             ai_integration_phase: true,
+            api_coverage_gate: true,
             human_verify_mode: 'end-of-phase',
             context_guard_mode: 'warn',
             text_mode: false,
@@ -691,6 +692,18 @@ function cmdConfigSet(cwd, keyPath, value, raw) {
     const VALID_CONTEXT_POSITIONS = ['front', 'end'];
     if (kp === 'statusline.context_position')
         assertEnumValue(parsedValue, val, VALID_CONTEXT_POSITIONS, 'statusline.context_position');
+    // statusline.show_context_tokens — boolean only
+    if (kp === 'statusline.show_context_tokens') {
+        if (typeof parsedValue !== 'boolean') {
+            error(`Invalid statusline.show_context_tokens '${val}'. Must be a boolean (true or false).`);
+        }
+    }
+    // statusline.show_git — boolean only
+    if (kp === 'statusline.show_git') {
+        if (typeof parsedValue !== 'boolean') {
+            error(`Invalid statusline.show_git '${val}'. Must be a boolean (true or false).`);
+        }
+    }
     // Fallow scope + profile enum validation (#3424)
     const VALID_FALLOW_SCOPES = ['phase', 'repo'];
     if (kp === 'code_quality.fallow.scope')

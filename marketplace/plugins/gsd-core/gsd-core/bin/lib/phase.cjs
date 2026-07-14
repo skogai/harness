@@ -32,13 +32,13 @@ const coreUtilsMod = require("./core-utils.cjs");
 const { toPosixPath, generateSlugInternal, readSubdirectories } = coreUtilsMod;
 // eslint-disable-next-line @typescript-eslint/no-require-imports -- phase-id.cjs is an export= CommonJS module
 const phaseIdMod = require("./phase-id.cjs");
-const { escapeRegex, normalizePhaseName, phaseMarkdownRegexSource, comparePhaseNum, phaseTokenMatches, OPTIONAL_PROJECT_CODE_PREFIX_SOURCE, OPTIONAL_PHASE_TAG_SOURCE, } = phaseIdMod;
+const { escapeRegex, normalizePhaseName, phaseMarkdownRegexSource, comparePhaseNum, phaseTokenMatches, OPTIONAL_PROJECT_CODE_PREFIX_SOURCE, OPTIONAL_PHASE_TAG_SOURCE, PHASE_NUMBER_TOKEN_SOURCE, } = phaseIdMod;
 // eslint-disable-next-line @typescript-eslint/no-require-imports -- phase-locator.cjs is an export= CommonJS module
 const phaseLocatorMod = require("./phase-locator.cjs");
 const { findPhaseInternal, getArchivedPhaseDirs } = phaseLocatorMod;
 // eslint-disable-next-line @typescript-eslint/no-require-imports -- roadmap-parser.cjs is an export= CommonJS module
 const roadmapParserMod = require("./roadmap-parser.cjs");
-const { stripShippedMilestones, extractCurrentMilestone, getMilestonePhaseFilter } = roadmapParserMod;
+const { stripShippedMilestones, extractCurrentMilestone, getMilestonePhaseFilter, currentMilestoneRawRanges, withPhaseSection } = roadmapParserMod;
 // eslint-disable-next-line @typescript-eslint/no-require-imports -- planning-workspace.cjs is an export= CommonJS module
 const planningWorkspace = require("./planning-workspace.cjs");
 // eslint-disable-next-line @typescript-eslint/no-require-imports -- frontmatter.cjs is an export= CommonJS module
@@ -55,7 +55,7 @@ const { evaluateUatPassed } = uatPredicate;
 // eslint-disable-next-line @typescript-eslint/no-require-imports -- verification.cjs is an export= CommonJS module
 const verificationMod = require("./verification.cjs");
 const { readVerificationStatus } = verificationMod;
-const { planningDir, withPlanningLock } = planningWorkspace;
+const { planningDir, withPlanningLock, listAvailableWorkstreams, getActiveWorkstream } = planningWorkspace;
 const { extractFrontmatter } = frontmatterMod;
 const { readModifyWriteStateMd, stateExtractField, stateReplaceField, syncStateFrontmatter, withStateLock, updatePerformanceMetricsSection, } = stateMod;
 // #2893 — strict canonical filter: `{padded_phase}-{NN}-PLAN.md` or `PLAN.md`.
@@ -316,8 +316,7 @@ function cmdFindPhase(cwd, phase, raw) {
             const match = dirs.find((d) => phaseTokenMatches(d, normalized));
             if (!match)
                 continue;
-            const dirMatch = match.match(new RegExp(`^${OPTIONAL_PROJECT_CODE_PREFIX_SOURCE}(\\d+[A-Z]?(?:\\.\\d+)*)-?(.*)`, 'i')) ||
-                match.match(/^(\d+[A-Z]?(?:\.\d+)*)-?(.*)/i);
+            const dirMatch = match.match(new RegExp(`^${OPTIONAL_PROJECT_CODE_PREFIX_SOURCE}(${PHASE_NUMBER_TOKEN_SOURCE})-?(.*)`, 'i')) || match.match(new RegExp(`^(${PHASE_NUMBER_TOKEN_SOURCE})-?(.*)`, 'i'));
             const phaseNumber = dirMatch ? dirMatch[1] : normalized;
             const phaseName = dirMatch && dirMatch[2] ? dirMatch[2] : null;
             const phaseDir = node_path_1.default.join(searchDir, match);
@@ -581,13 +580,13 @@ function cmdPhaseAdd(cwd, description, raw, customId) {
             // Three sources are scanned so that a phase in ANY representation
             // (section header, roadmap bullet, or on-disk directory) is counted:
             // 1) Section headers: ### Phase N: / ## Phase N: / #### Phase N:
-            // #1729: `(?:\s*\([^)\n]*\))?` tolerates a pre-colon ( ) tag (literal mirror of OPTIONAL_PHASE_TAG_SOURCE).
-            const headerPattern = /#{2,4}\s*Phase\s+(\d+)[A-Z]?(?:\.\d+)*(?:\s*\([^)\n]*\))?:/gi;
+            // #1729: `(?:\s*\([^)\n]{0,200}\))?` tolerates a pre-colon ( ) tag (literal mirror of OPTIONAL_PHASE_TAG_SOURCE).
+            const headerPattern = /#{2,4}\s*Phase\s+(\d+)[A-Z]?(?:\.\d+)*(?:\s*\([^)\n]{0,200}\))?:/gi;
             // 2) Roadmap bullet entries: - [ ] **Phase N: ...** (all checkbox variants)
             // The lookahead accepts colon, decimal-dot, whitespace, bold-close asterisk,
             // or end-of-line so titleless forms ("- [ ] **Phase 11**", "- [ ] Phase 11")
             // are counted and cannot collide with a freshly-added phase. (#1229)
-            const bulletPattern = /^[ \t]*-[ \t]*\[[^\]]*\][ \t]*\*{0,2}Phase[ \t]+(\d+)(?=[:.\s*]|$)/gim;
+            const bulletPattern = /^[ \t]*-[ \t]*\[[^\]]{0,200}\][ \t]*\*{0,2}Phase[ \t]+(\d+)(?=[:.\s*]|$)/gim;
             const usedPhaseNums = new Set();
             let m;
             while ((m = headerPattern.exec(content)) !== null) {
@@ -666,8 +665,8 @@ function cmdPhaseAddBatch(cwd, descriptions, raw) {
         const content = extractCurrentMilestone(rawContent, cwd);
         let maxPhase = 0;
         if (config.phase_naming !== 'custom') {
-            // #1729: `(?:\s*\([^)\n]*\))?` tolerates a pre-colon ( ) tag (literal mirror of OPTIONAL_PHASE_TAG_SOURCE).
-            const phasePattern = /#{2,4}\s*Phase\s+(\d+)[A-Z]?(?:\.\d+)*(?:\s*\([^)\n]*\))?:/gi;
+            // #1729: `(?:\s*\([^)\n]{0,200}\))?` tolerates a pre-colon ( ) tag (literal mirror of OPTIONAL_PHASE_TAG_SOURCE).
+            const phasePattern = /#{2,4}\s*Phase\s+(\d+)[A-Z]?(?:\.\d+)*(?:\s*\([^)\n]{0,200}\))?:/gi;
             let m;
             while ((m = phasePattern.exec(content)) !== null) {
                 const num = parseInt(m[1], 10);
@@ -951,7 +950,7 @@ function updateRoadmapAfterPhaseRemoval(roadmapPath, targetPhase, isDecimal, rem
         if (!isDecimal) {
             // #1729: fold an optional pre-colon ( ) tag into the suffix capture so it
             // is re-emitted verbatim — a tagged later phase still gets renumbered.
-            content = content.replace(/(#{2,4}\s*Phase\s+)(\d+(?:\.\d+)?)((?:\s*\([^)\n]*\))?\s*:)/gi, (_match, prefix, num, suffix) => `${prefix}${decrementRoadmapPhaseToken(num, removedInt)}${suffix}`);
+            content = content.replace(/(#{2,4}\s*Phase\s+)(\d+(?:\.\d+)?)((?:\s*\([^)\n]{0,200}\))?\s*:)/gi, (_match, prefix, num, suffix) => `${prefix}${decrementRoadmapPhaseToken(num, removedInt)}${suffix}`);
             content = content.replace(/(-\s*\[[ x]\]\s*.*?Phase\s+)(\d+)(\s*:|\s+)/gi, (_match, prefix, num, suffix) => `${prefix}${decrementRoadmapPhaseNumber(num, removedInt)}${suffix}`);
             content = content.replace(/(\|\s*)(\d+)(\.\s)/g, (_match, prefix, num, suffix) => `${prefix}${decrementRoadmapPhaseNumber(num, removedInt)}${suffix}`);
             content = content.replace(/(?<![0-9-])(\d{2})-(\d{2})(?=(?:(?:-[A-Za-z][A-Za-z0-9-]*)?-(?:PLAN|SUMMARY)\.md)|(?![0-9-]))/g, (_match, phaseNum, planNum) => `${decrementRoadmapPaddedPhaseNumber(phaseNum, removedInt)}-${planNum}`);
@@ -1070,10 +1069,23 @@ function cmdPhaseComplete(cwd, phaseNum, raw) {
     if (!phaseNum) {
         error('phase number required for phase complete');
     }
+    // #2028: fail safe in workstream mode with no active workstream. With no active
+    // workstream and no --ws, planningDir(cwd) resolves to root .planning, so
+    // phase.complete would write STATE.md/ROADMAP.md (and mislabel milestone status)
+    // into the shared root that other workstreams read. Mirror the #1912 guard that
+    // init.progress got (resolution: GSD_WORKSTREAM env > stored active pointer; an
+    // explicit --ws sets GSD_WORKSTREAM upstream and satisfies the check).
+    const availableWorkstreams = listAvailableWorkstreams(cwd);
+    const resolvedWorkstream = process.env['GSD_WORKSTREAM'] || getActiveWorkstream(cwd);
+    if (availableWorkstreams.length > 0 && !resolvedWorkstream) {
+        error(`phase.complete requires a workstream in workstream mode — no active workstream is set, so root STATE.md/ROADMAP.md (likely stale) would be written. ` +
+            `Pass --ws <name> or run ${(0, runtime_slash_cjs_1.formatGsdSlash)('workstream set', (0, runtime_slash_cjs_1.resolveRuntime)(cwd))} first. ` +
+            `Available workstreams: ${availableWorkstreams.join(', ')}`);
+    }
     const roadmapPath = node_path_1.default.join(planningDir(cwd), 'ROADMAP.md');
     const statePath = node_path_1.default.join(planningDir(cwd), 'STATE.md');
     const phasesDir = node_path_1.default.join(planningDir(cwd), 'phases');
-    const today = clock_cjs_1.realClock.today();
+    const today = clock_cjs_1.realClock.localToday();
     const phaseInfoRaw = findPhaseInternal(cwd, phaseNum);
     if (!phaseInfoRaw) {
         error(`Phase ${phaseNum} not found`);
@@ -1135,8 +1147,23 @@ function cmdPhaseComplete(cwd, phaseNum, raw) {
                 const originalRoadmapContent = node_fs_1.default.readFileSync(roadmapPath, 'utf-8');
                 roadmapContent = originalRoadmapContent;
                 const phaseEscaped = phaseMarkdownRegexSource(phaseNum);
-                const checkboxPattern = new RegExp(`(-\\s*\\[)[ ](\\]\\s*.*Phase\\s+${phaseEscaped}${OPTIONAL_PHASE_TAG_SOURCE}[:\\s][^\\n]*)`, 'i');
-                roadmapContent = roadmapContent.replace(checkboxPattern, `$1x$2 (completed ${today})`);
+                // #2067: the gap between `]` and `Phase N` must allow only whitespace /
+                // markdown bold emphasis — NOT greedy `.*`. A greedy gap matched a later
+                // phase whose description merely mentioned the completed phase number,
+                // so completing an already-checked phase (idempotent re-run) checked the
+                // wrong phase's box. Mirrors the tight pattern used by phase-insert
+                // (`]\\s*(?:\\*\\*)?Phase`).
+                // #2067/#2200: line-anchored (^ + m flag, optional leading indent) so an
+                // inline / backticked prose literal cannot match. Milestone-scoped below
+                // (mutateMilestonePhase) so a Backlog entry or a same-numbered shipped-
+                // milestone phase cannot be flipped either.
+                // ADR-2143 §4 note: this is the phase-LIST checkbox — it lives in the
+                // milestone's `- [ ] Phase N: …` checklist, OUTSIDE any `### Phase N`
+                // detail section, so there is no section for withPhaseSection to bind
+                // to. Left as a milestone-slice-scoped regex (not migrated to the
+                // sectionizer seam); see planCountBodyPattern below for the sites that
+                // WERE migrated.
+                const checkboxPattern = new RegExp(`^[ \\t]*(-\\s*\\[)[ ](\\]\\s*(?:\\*\\*)?\\s*Phase\\s+${phaseEscaped}${OPTIONAL_PHASE_TAG_SOURCE}[:\\s][^\\n]*)`, 'im');
                 const tableRowPattern = new RegExp(`^(\\|\\s*${phaseEscaped}\\.?\\s[^|]*(?:\\|[^\\n]*))$`, 'im');
                 // Scope the Progress-row search to the ## Progress section so the regex
                 // doesn't bind to an earlier table (e.g. | Phase | Requirements | Count |)
@@ -1169,16 +1196,59 @@ function cmdPhaseComplete(cwd, phaseNum, raw) {
                 else {
                     roadmapContent = roadmapContent.replace(tableRowPattern, updateProgressRow);
                 }
-                const planCountPattern = new RegExp(`(#{2,4}\\s*Phase\\s+${phaseEscaped}[\\s\\S]*?\\*\\*Plans:\\*\\*\\s*)[^\\n]+`, 'i');
-                roadmapContent = roadmapContent.replace(planCountPattern, `$1${summaryCount}/${planCount} plans complete`);
+                // ADR-2143 §4: the plan-count write is now routed through
+                // withPhaseSection (see mutateMilestonePhase below), which hands this
+                // pattern ONLY phase N's own detail-section body — so the pattern no
+                // longer needs its own `#{2,4}\s*Phase\s+N` anchor + skip-ahead-past-
+                // interior-headings lookahead; the section boundary itself confines
+                // the match (the #2067/#2200 boundary-crossing class is now
+                // structurally impossible for this site rather than regex-enforced).
+                const planCountBodyPattern = /(\*\*Plans:\*\*\s*)[^\n]+/i;
                 const phaseInfoSummaries = phaseInfo['summaries'];
-                for (const summaryFile of phaseInfoSummaries) {
-                    const planId = summaryFile.replace('-SUMMARY.md', '').replace('SUMMARY.md', '');
-                    if (!planId)
-                        continue;
-                    const planEscaped = escapeRegex(planId);
-                    const planCheckboxPattern = new RegExp(`(-\\s*\\[) (\\]\\s*(?:\\*\\*)?${planEscaped}(?:\\*\\*)?)`, 'i');
-                    roadmapContent = (roadmapContent).replace(planCheckboxPattern, '$1x$2');
+                // #2200: apply the phase-checkbox flip, the plan-count write, and the
+                // per-plan checkbox flips ONLY within the current milestone's region(s)
+                // (primary section + optional Phase Details section). A bullet/heading in
+                // a shipped milestone, a Backlog section, or a backticked prose literal is
+                // outside the window and stays untouched. With no versioned active
+                // milestone, fall back to whole-content mutation (prior behaviour).
+                const mutateMilestonePhase = (slice) => {
+                    let s = slice;
+                    s = s.replace(checkboxPattern, `$1x$2 (completed ${today})`);
+                    // ADR-2143 §4: the plan-count write and the per-plan checkbox flips
+                    // are both scoped to phase N's OWN detail section via
+                    // withPhaseSection — the edit callback below only ever sees that
+                    // section's body, so neither regex can escape into a sibling
+                    // phase's section, a shipped milestone, or a Backlog entry.
+                    s = withPhaseSection(s, phaseNum, (body) => {
+                        let b = body.replace(planCountBodyPattern, `$1${summaryCount}/${planCount} plans complete`);
+                        for (const summaryFile of phaseInfoSummaries) {
+                            const planId = summaryFile.replace('-SUMMARY.md', '').replace('SUMMARY.md', '');
+                            if (!planId)
+                                continue;
+                            const planEscaped = escapeRegex(planId);
+                            const planCheckboxPattern = new RegExp(`(-\\s*\\[) (\\]\\s*(?:\\*\\*)?${planEscaped}(?:\\*\\*)?)`, 'i');
+                            b = b.replace(planCheckboxPattern, '$1x$2');
+                        }
+                        return b;
+                    });
+                    return s;
+                };
+                const milestoneRanges = currentMilestoneRawRanges(roadmapContent, cwd);
+                if (milestoneRanges) {
+                    // Splice later windows first so an earlier window's offsets are not
+                    // shifted by a length-changing mutation in a later window.
+                    const windows = [milestoneRanges.details, milestoneRanges.primary]
+                        .filter((w) => w !== null)
+                        .sort((a, b) => b.start - a.start);
+                    for (const w of windows) {
+                        roadmapContent =
+                            roadmapContent.slice(0, w.start)
+                                + mutateMilestonePhase(roadmapContent.slice(w.start, w.end))
+                                + roadmapContent.slice(w.end);
+                    }
+                }
+                else {
+                    roadmapContent = mutateMilestonePhase(roadmapContent);
                 }
                 writes.push({
                     filePath: roadmapPath,
@@ -1265,7 +1335,11 @@ function cmdPhaseComplete(cwd, phaseNum, raw) {
                         ? reqContent.slice(traceabilityHeadingMatch.index)
                         : '';
                     const tableReqIds = new Set();
-                    const tableRowPat = /^\|\s*([A-Z][A-Z0-9]*-\d+)\s*\|/gm;
+                    // #2203: match REQ-IDs in any pipe-delimited cell (not just the first
+                    // column) so a traceability table that leads with a status column (e.g.
+                    // | ☐ | REQ-01 | …) is parsed correctly instead of reporting every row
+                    // as missing.
+                    const tableRowPat = /\|\s*([A-Z][A-Z0-9]*-\d+)\s*\|/g;
                     let tableMatch;
                     while ((tableMatch = tableRowPat.exec(traceabilitySection)) !== null) {
                         tableReqIds.add(tableMatch[1]);
@@ -1287,7 +1361,7 @@ function cmdPhaseComplete(cwd, phaseNum, raw) {
                     .filter(isDirInMilestone)
                     .sort((a, b) => comparePhaseNum(a, b));
                 for (const dir of dirs) {
-                    const dm = dir.match(/^(\d+[A-Z]?(?:\.\d+)*)-?(.*)/i);
+                    const dm = dir.match(new RegExp(`^(${PHASE_NUMBER_TOKEN_SOURCE})-?(.*)`, 'i'));
                     if (dm) {
                         if (/^999(?:\.|$)/.test(dm[1]))
                             continue;
@@ -1318,10 +1392,10 @@ function cmdPhaseComplete(cwd, phaseNum, raw) {
                     // phase. Allow optional `**`/`__` emphasis after the marker and stop
                     // the name capture at emphasis so bold names slug cleanly; the number
                     // capture is unchanged.
-                    // #1729: `(?:\s*\([^)\n]*\))?` after the number tolerates a pre-colon
+                    // #1729: `(?:\s*\([^)\n]{0,200}\))?` after the number tolerates a pre-colon
                     // ( ) tag (literal mirror of OPTIONAL_PHASE_TAG_SOURCE) so
                     // `### Phase N (Cluster B): X` resolves. Captures are unchanged.
-                    const phasePattern = /(?:#{2,4}|-\s*\[[ xX]\])\s*(?:\*\*|__)?\s*Phase\s+(\d+[A-Z]?(?:\.\d+)*)(?:\s*\([^)\n]*\))?\s*:\s*([^\n*]+)/gi;
+                    const phasePattern = new RegExp(`(?:#{2,4}|-\\s*\\[[ xX]\\])\\s*(?:\\*\\*|__)?\\s*Phase\\s+(${PHASE_NUMBER_TOKEN_SOURCE})(?:\\s*\\([^)\\n]{0,200}\\))?\\s*:\\s*([^\\n*]+)`, 'gi');
                     let pm;
                     while ((pm = phasePattern.exec(roadmapForPhases)) !== null) {
                         if (comparePhaseNum(pm[1], phaseNum) > 0) {
@@ -1334,6 +1408,47 @@ function cmdPhaseComplete(cwd, phaseNum, raw) {
                             isLastPhase = false;
                             break;
                         }
+                    }
+                }
+                catch {
+                    /* intentionally empty */
+                }
+            }
+            // #2028: don't stamp "Milestone complete" when a LOWER-numbered phase is
+            // still outstanding. The two blocks above only clear isLastPhase when a
+            // HIGHER-numbered phase exists, so completing the numerically-highest phase
+            // out of order (e.g. Phase 10 before Phase 9) wrongly read as milestone-end.
+            // A phase is complete iff its roadmap checkbox is `[x]` (phase.complete sets
+            // this on completion — including the one just marked above); any earlier
+            // phase in this milestone whose checkbox is still `[ ]` means the milestone
+            // is not done, and the LOWEST such phase is the real next actionable item —
+            // point next_phase at it so STATE.md advances to the gap rather than parking
+            // on the just-completed phase. Roadmaps without phase checkboxes (heading-
+            // only) retain the prior behavior — there is nothing to scan. The checkbox
+            // pattern mirrors the sibling phasePattern's anchoring (only whitespace/bold
+            // between the box and "Phase", a required `:`) so unrelated checklist lines
+            // that merely mention "Phase N" don't match.
+            if (isLastPhase && roadmapContent !== null) {
+                try {
+                    const milestoneScope = extractCurrentMilestone(roadmapContent, cwd);
+                    const cbPattern = new RegExp(`-\\s*\\[(x| )\\]\\s*(?:\\*\\*|__)?\\s*Phase\\s+(${PHASE_NUMBER_TOKEN_SOURCE})(?:\\s*\\([^)\\n]{0,200}\\))?\\s*:\\s*([^\\n*]+)`, 'gi');
+                    let cbm;
+                    let lowestOutstanding = null;
+                    while ((cbm = cbPattern.exec(milestoneScope)) !== null) {
+                        const isChecked = cbm[1].toLowerCase() === 'x';
+                        if (!isChecked && comparePhaseNum(cbm[2], phaseNum) < 0) {
+                            if (lowestOutstanding === null || comparePhaseNum(cbm[2], lowestOutstanding.num) < 0) {
+                                lowestOutstanding = {
+                                    num: cbm[2],
+                                    name: cbm[3].replace(/\(INSERTED\)/i, '').trim().toLowerCase().replace(/\s+/g, '-'),
+                                };
+                            }
+                        }
+                    }
+                    if (lowestOutstanding !== null) {
+                        isLastPhase = false;
+                        nextPhaseNum = lowestOutstanding.num;
+                        nextPhaseName = lowestOutstanding.name;
                     }
                 }
                 catch {

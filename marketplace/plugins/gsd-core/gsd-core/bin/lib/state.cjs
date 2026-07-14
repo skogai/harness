@@ -19,7 +19,7 @@ const configLoaderMod = require("./config-loader.cjs");
 const { loadConfig } = configLoaderMod;
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const phaseIdMod = require("./phase-id.cjs");
-const { escapeRegex, normalizePhaseName, extractPhaseToken } = phaseIdMod;
+const { escapeRegex, normalizePhaseName, extractPhaseToken, parsePhaseFromProse, PHASE_NUMBER_TOKEN_SOURCE } = phaseIdMod;
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const roadmapParserMod = require("./roadmap-parser.cjs");
 const { getMilestoneInfo, getMilestonePhaseFilter, extractCurrentMilestone } = roadmapParserMod;
@@ -447,18 +447,31 @@ function cmdStateUpdateProgress(cwd, raw) {
     const _totalPlans = totalPlans;
     const _totalSummaries = totalSummaries;
     readModifyWriteStateMd(statePath, (content) => {
-        // Try **Progress:** bold format first, then plain Progress: format
-        const boldProgressPattern = /(\*\*Progress:\*\*\s*).*/i;
-        const plainProgressPattern = /^(Progress:\s*).*/im;
-        if (boldProgressPattern.test(content)) {
-            updated = true;
-            return content.replace(boldProgressPattern, (_match, prefix) => `${prefix}${progressStr}`);
-        }
-        else if (plainProgressPattern.test(content)) {
-            updated = true;
-            return content.replace(plainProgressPattern, (_match, prefix) => `${prefix}${progressStr}`);
-        }
-        return content;
+        // #2177: match against the BODY only. With /i the patterns below would
+        // otherwise hit the YAML frontmatter `progress:` key first (and `\s*` would
+        // eat its newline, mangling the nested block), while the body Progress: line
+        // — which frontmatter `percent` is re-derived from on every write — stays
+        // stale and silently reverts the update.
+        const body = stripFrontmatter(content);
+        const fmPrefix = content.slice(0, content.length - body.length);
+        // Swap only the machine segment ("[bar] NN%" or bare "NN%"), preserving any
+        // descriptive suffix an agent authored, e.g. "(2/4 plans done; blocked on…)".
+        const machineSegment = /(?:\[[^\]\r\n]*\][ \t]*)?\d{1,3}%/;
+        const replaceValue = (value) => machineSegment.test(value)
+            ? value.replace(machineSegment, progressStr)
+            : progressStr;
+        // Try **Progress:** bold format first, then plain Progress: format.
+        const boldProgressPattern = /(\*\*Progress:\*\*[ \t]*)([^\r\n]*)/i;
+        const plainProgressPattern = /^(Progress:[ \t]*)([^\r\n]*)/im;
+        const pattern = boldProgressPattern.test(body)
+            ? boldProgressPattern
+            : plainProgressPattern.test(body)
+                ? plainProgressPattern
+                : null;
+        if (!pattern)
+            return content;
+        updated = true;
+        return fmPrefix + body.replace(pattern, (_match, prefix, value) => `${prefix}${replaceValue(value)}`);
     }, cwd);
     if (updated) {
         output({ updated: true, percent, completed: _totalSummaries, total: _totalPlans, bar: progressStr }, raw, progressStr);
@@ -972,19 +985,13 @@ function matchSessionSection(body) {
         || body.match(/(?:^|\n)##[ \t]*Session Continuity[ \t]*\n([\s\S]*?)(?=\n##|$)/i); // allow-adhoc-markdown: read-only session-continuity section extract in state.cts; pending collectSection migration #1372
 }
 function parseProsePhaseField(value) {
-    if (!value)
-        return { phase: null, name: null };
-    const phaseMatch = value.match(/\b(\d+[A-Z]?(?:\.\d+)*)\b/i);
-    const parenName = value.match(/\(([^)]+)\)/);
-    const dashName = value.match(/—\s*([^(\n]+?)(?:\s*\(|$)/);
-    const rawName = parenName?.[1] ?? dashName?.[1] ?? null;
-    const name = rawName && !/^(?:complete|executing|not started)$/i.test(rawName.trim())
-        ? rawName.trim()
-        : null;
-    return {
-        phase: phaseMatch ? phaseMatch[1] : null,
-        name,
-    };
+    // #2121 Phase 2 (#2125): delegate to the canonical anchored parser so this
+    // module holds no independent prose phase-id regex. Drives #2111 — the
+    // anchored parser returns { phase: null } for a "Milestone vX.Y complete"
+    // body line (the old unanchored regex mined the minor-version digit, e.g.
+    // v0.5 -> "5"), so syncStateFrontmatter's #905 guard preserves the real
+    // current_phase instead of clobbering it.
+    return parsePhaseFromProse(value);
 }
 function parseProseLastActivityField(value) {
     if (!value)
@@ -1257,6 +1264,7 @@ function buildStateFrontmatter(bodyContent, cwd) {
                         // exclusion below). Project-code-aware via phaseKeyFromDir.
                         if (retiredPhaseNums.size > 0 && retiredPhaseNums.has(phaseKeyFromDir(dir)))
                             continue;
+                        // phase-id-owner: dir-name dedup grouping; diverges from extractPhaseToken/phaseKeyFromDir on project-code-prefixed and multi-segment milestone dirs. Kept local.
                         const m = dir.match(/^0*(\d+[A-Za-z]?(?:\.\d+)*)/);
                         const key = m ? m[1].toLowerCase() : dir;
                         if (!seenPhaseNums.has(key)) {
@@ -1293,8 +1301,8 @@ function buildStateFrontmatter(bodyContent, cwd) {
                     // truth for total_phases (#549).
                     let roadmapPhaseCount = 0;
                     if (roadmapScope !== null) {
-                        // #1729: `(?:\s*\([^)\n]*\))?` tolerates a pre-colon ( ) tag (literal mirror of OPTIONAL_PHASE_TAG_SOURCE).
-                        const phaseHeadingPattern = /#{2,4}\s*Phase\s+([\w][\w.-]*)(?:\s*\([^)\n]*\))?\s*:/gi;
+                        // #1729: `(?:\s*\([^)\n]{0,200}\))?` tolerates a pre-colon ( ) tag (literal mirror of OPTIONAL_PHASE_TAG_SOURCE).
+                        const phaseHeadingPattern = /#{2,4}\s*Phase\s+([\w][\w.-]*)(?:\s*\([^)\n]{0,200}\))?\s*:/gi;
                         let m;
                         while ((m = phaseHeadingPattern.exec(roadmapScope)) !== null) {
                             // Only count tokens that contain at least one digit — excludes
@@ -1430,7 +1438,17 @@ function syncStateFrontmatter(content, cwd) {
     // existing frontmatter already holds; only an empty derived value falls through
     // to this guard (the primary #905 preserve path below handles that).
     const MILESTONE_NAME_PLACEHOLDER = 'milestone';
-    if (derivedFm['milestone_name'] === MILESTONE_NAME_PLACEHOLDER &&
+    // #2135: widen the preserve guard. A bad derive is not always the literal
+    // placeholder — getMilestoneInfo can return a delimiter-led fragment
+    // ("— Active Milestone") when the roadmap regex mis-binds. Preserve the
+    // existing curated name unless the derived value actually looks like a name:
+    // non-empty, not the placeholder, and not punctuation-led.
+    const derivedName = derivedFm['milestone_name'];
+    const derivedLooksLikeName = typeof derivedName === 'string'
+        && derivedName.length > 0
+        && derivedName !== MILESTONE_NAME_PLACEHOLDER
+        && !/^[\s—–:-]/.test(derivedName);
+    if (!derivedLooksLikeName &&
         existingFm['milestone_name'] &&
         existingFm['milestone_name'] !== MILESTONE_NAME_PLACEHOLDER) {
         derivedFm['milestone_name'] = existingFm['milestone_name'];
@@ -1476,6 +1494,15 @@ function syncStateFrontmatter(content, cwd) {
     // cmdStateJson on the read path where it is appropriate.
     if (!derivedFm['progress'] && existingFm['progress']) {
         derivedFm['progress'] = (0, state_document_cjs_1.normalizeProgressNumbers)(existingFm['progress']);
+    }
+    // #2202: carry forward any existing frontmatter key that the schema does not
+    // own, so custom/unknown keys are not silently dropped on every mutating verb.
+    // Schema-owned keys (already in derivedFm from buildStateFrontmatter + the
+    // preserve guards above) still win.
+    for (const key of Object.keys(existingFm)) {
+        if (!(key in derivedFm) && existingFm[key] !== undefined) {
+            derivedFm[key] = existingFm[key];
+        }
     }
     const yamlStr = reconstructFrontmatter(derivedFm);
     return `---\n${yamlStr}\n---\n\n${body}`;
@@ -2222,7 +2249,7 @@ function cmdStateSync(cwd, options, raw) {
         if (completed)
             diskCompletedPhases++;
         // Track the highest phase with incomplete plans (or any plans)
-        const phaseMatch = dir.match(/^(\d+[A-Z]?(?:\.\d+)*)/i);
+        const phaseMatch = dir.match(new RegExp(`^(${PHASE_NUMBER_TOKEN_SOURCE})`, 'i'));
         if (phaseMatch && plans > 0) {
             if (summaries < plans) {
                 // Incomplete phase — this is likely the current one
@@ -2246,8 +2273,8 @@ function cmdStateSync(cwd, options, raw) {
     try {
         let roadmapPhaseCount = 0;
         if (syncRoadmapScope !== null) {
-            // #1729: `(?:\s*\([^)\n]*\))?` tolerates a pre-colon ( ) tag (literal mirror of OPTIONAL_PHASE_TAG_SOURCE).
-            const phaseHeadingPattern = /#{2,4}\s*Phase\s+([\w][\w.-]*)(?:\s*\([^)\n]*\))?\s*:/gi;
+            // #1729: `(?:\s*\([^)\n]{0,200}\))?` tolerates a pre-colon ( ) tag (literal mirror of OPTIONAL_PHASE_TAG_SOURCE).
+            const phaseHeadingPattern = /#{2,4}\s*Phase\s+([\w][\w.-]*)(?:\s*\([^)\n]{0,200}\))?\s*:/gi;
             let m;
             while ((m = phaseHeadingPattern.exec(syncRoadmapScope)) !== null) {
                 // Only count tokens that contain at least one digit — excludes
@@ -2388,7 +2415,7 @@ function cmdStatePrune(cwd, options, raw) {
     }, cwd);
     // Write archived entries to STATE-ARCHIVE.md
     if (archived.length > 0) {
-        const timestamp = clock_cjs_1.realClock.today();
+        const timestamp = clock_cjs_1.realClock.localToday();
         let archiveContent = (0, shell_command_projection_cjs_1.platformReadSync)(archivePath);
         if (archiveContent === null) {
             archiveContent = '# STATE Archive\n\nPruned entries from STATE.md. Recoverable but no longer loaded into agent context.\n\n';
@@ -2530,9 +2557,13 @@ function resolvePhaseIdForCompletePhase(content, overridePhase) {
         (0, state_document_cjs_1.stateExtractField)(content, 'Current Phase') ||
         (0, state_document_cjs_1.stateExtractField)(content, 'Phase') ||
         '';
-    // Accept canonical phase token only (e.g. 3, 03, 3A, 3.3, 10.2)
-    const phaseMatch = String(candidate).match(/(\d+[A-Z]?(?:\.\d+)*)/i);
-    return phaseMatch ? phaseMatch[1] : null;
+    // #2125: parse via the canonical anchored parser so a narrative `Phase:`
+    // body line (e.g. "Milestone v0.5 complete") does not mine a bogus token —
+    // the old unanchored regex yielded "0.5" and rewrote STATE.md as
+    // "Phase 0.5 complete". A canonical token at the start of the value
+    // (3, 03, 3A, 3.3, 10.2, "3 of 5", "1 — Setup") is preserved; a milestone
+    // closure line yields null, so the caller's "unable to resolve" guard fires.
+    return parsePhaseFromProse(candidate).phase;
 }
 function cmdStateCompletePhase(cwd, raw, overridePhase) {
     const statePath = planningPaths(cwd).state;
@@ -2556,13 +2587,14 @@ function cmdStateCompletePhase(cwd, raw, overridePhase) {
     // The handler is now a no-op in that case so re-invocation from downstream
     // workflows cannot regress the project state.
     const existingCurrentPhaseRaw = (0, state_document_cjs_1.stateExtractField)(content, 'Current Phase') || '';
-    const existingCurrentPhaseMatch = String(existingCurrentPhaseRaw).match(/(\d+[A-Z]?(?:\.\d+)*)/i);
-    const existingCurrentPhase = existingCurrentPhaseMatch ? existingCurrentPhaseMatch[1] : null;
+    // #2125: same canonical parser as resolvePhaseIdForCompletePhase so the two
+    // sites cannot diverge on the token they extract.
+    const existingCurrentPhase = parsePhaseFromProse(existingCurrentPhaseRaw).phase;
     if (existingCurrentPhase && existingCurrentPhase !== resolvedPhase) {
         output({ updated: [], phase: resolvedPhase, idempotent: true, note: 'phase already superseded; no-op' }, raw, 'false');
         return;
     }
-    const today = clock_cjs_1.realClock.today();
+    const today = clock_cjs_1.realClock.localToday();
     const updated = [];
     readModifyWriteStateMd(statePath, (content) => {
         const currentPhase = resolvedPhase;
