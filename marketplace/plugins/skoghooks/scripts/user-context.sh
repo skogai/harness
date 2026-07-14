@@ -5,4 +5,4 @@
 
 # Add context here — stdout gets injected with every user message
 # Example: echo "Current branch: $(git branch --show-current 2>/dev/null)"
-echo "Current branch: $(git branch --show-current 2>/dev/null)"
+# echo "Current branch: $(git branch --show-current)"
