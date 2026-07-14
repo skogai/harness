@@ -28,7 +28,7 @@ Or from the SkogAI Market marketplace:
 - `SessionStart` — `scripts/session_start.py --load-context`
 - `SessionEnd` — `scripts/session_end.py`
 - `Setup` — `scripts/setup.py`
-- `UserPromptSubmit` — `scripts/user_prompt_submit.py --log-only --store-last-prompt --name-agent`
+- `UserPromptSubmit` — `scripts/user_prompt_submit.py --log-only --name-agent`
 - `PreToolUse` — `scripts/pre_tool_use.py`
 - `PostToolUse` — `scripts/post_tool_use.py`
 - `PostToolUseFailure` — `scripts/post_tool_use_failure.py`
@@ -100,7 +100,7 @@ echo '{"session_id":"test","hook_event_name":"SessionStart"}' | uv run scripts/s
 | session_start.py       | `--load-context`                              | `--announce`            |
 | session_end.py         | —                                             | `--cleanup`             |
 | setup.py               | —                                             | `--install-deps` `--verbose` |
-| user_prompt_submit.py  | `--log-only --store-last-prompt --name-agent` | `--validate`            |
+| user_prompt_submit.py  | `--log-only --name-agent` | `--validate`            |
 | pre_tool_use.py        | —                                             | —                      |
 | post_tool_use.py       | —                                             | —                      |
 | post_tool_use_failure.py | —                                            | —                      |

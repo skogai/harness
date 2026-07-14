@@ -105,7 +105,7 @@ sys.exit(0)                          # never exit non-zero unless blocking
 | PreToolUse         | pre_tool_use.py          | —                                                   |
 | PostToolUse        | post_tool_use.py         | —                                                   |
 | PostToolUseFailure | post_tool_use_failure.py | —                                                   |
-| UserPromptSubmit   | user_prompt_submit.py    | `--log-only --store-last-prompt --name-agent`       |
+| UserPromptSubmit   | user_prompt_submit.py    | `--log-only --name-agent`       |
 | PermissionRequest  | permission_request.py    | `--log-only`                                        |
 | Notification       | notification.py          | —                                                   |
 | Stop               | stop.py                  | `--chat`                                            |
@@ -130,7 +130,7 @@ sys.exit(0)                          # never exit non-zero unless blocking
 | session_start.py     | `--load-context` `--announce`                                          |
 | session_end.py       | `--cleanup`                                                            |
 | setup.py             | `--install-deps` `--verbose`                                           |
-| user_prompt_submit.py| `--log-only` `--store-last-prompt` `--name-agent` `--validate`        |
+| user_prompt_submit.py| `--log-only` `--name-agent` `--validate`        |
 | permission_request.py| `--log-only` `--auto-allow`                                            |
 | stop.py              | `--chat`                                                               |
 | subagent_stop.py     | `--chat`                                                               |
