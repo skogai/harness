@@ -31,7 +31,7 @@ except ImportError:
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from _lib import parse_frontmatter, extract_xml_sections  # noqa: E402
 
-SCHEMA_DIR = Path(__file__).resolve().parent.parent / "templates" / "schemas"
+SCHEMA_DIR = Path(__file__).resolve().parent.parent / ".skogix" / "schemas"
 SCHEMA_PATH = SCHEMA_DIR / "router.schema.json"
 
 
