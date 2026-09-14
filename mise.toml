@@ -1,9 +1,9 @@
-# Declarative environment for the harness repo (https://mise.jdx.dev).
+# Declarative environment for this meta-repo (https://mise.jdx.dev).
+# This dir is the dev/overview environment, not a shipped artifact — actual
+# products (and their own tests) live one level down, e.g. in marketplace/.
 #
 # Fresh clone:
 #   mise trust && mise install
-# then run checks with:
-#   mise run check
 #
 # Machine-wide settings (SKOGAI_MODE, workstation paths, secrets such as
 # SKOGAI_GH_TOKEN) belong in ~/.config/mise/config.toml or a gitignored
@@ -22,19 +22,6 @@ usage = "latest"
 _.python.venv = { path = ".venv", create = true }
 # Optional machine-local overrides and secrets, gitignored.
 _.file = ".env"
-
-[tasks.test]
-description = "Run the node test suite"
-run = "node --test"
-
-[tasks."test:py"]
-description = "Run the Python test suite for scripts/"
-dir = "scripts"
-run = "python3 -m unittest discover -p 'test_*.py'"
-
-[tasks.check]
-description = "Run all test suites"
-depends = ["test", "test:py"]
 
 [tasks.install-skogcli]
 run = "uv tool install git+https://github.com/skogai/cli"
