@@ -3,3 +3,6 @@
 /.skogai/config/backups
 /tmp
 /.skogai/config/script_metadata.json
+
+# Machine-local SkogAI config injected by environment setup; contains secrets.
+/.skogai/config.json
