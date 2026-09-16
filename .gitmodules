@@ -1,0 +1,6 @@
+[submodule "skogharness"]
+	path = skogharness
+	url = https://github.com/skogai/skogharness.git
+[submodule "skills"]
+	path = skills
+	url = https://github.com/skogai/skills.git
